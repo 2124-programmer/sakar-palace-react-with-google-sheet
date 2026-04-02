@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { societyMeta } from '../data/societyData';
+import { ROLE_ADMIN, ROLE_VIEWER, useAppRole } from '../hooks/useAppRole';
 
 const navItems = [
   { to: '/', label: 'Dashboard' },
@@ -12,8 +13,50 @@ const navItems = [
 
 function MainLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { role, setRole } = useAppRole();
+  const clickCountRef = useRef(0);
+  const clickTimerRef = useRef(null);
 
   const closeMenu = () => setMenuOpen(false);
+
+  const getCurrentTimePassword = () => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}${minutes}`;
+  };
+
+  const handleSecretRoleTrigger = () => {
+    clickCountRef.current += 1;
+
+    if (clickTimerRef.current) {
+      window.clearTimeout(clickTimerRef.current);
+    }
+
+    clickTimerRef.current = window.setTimeout(() => {
+      clickCountRef.current = 0;
+    }, 1200);
+
+    if (clickCountRef.current >= 5) {
+      if (role === ROLE_ADMIN) {
+        setRole(ROLE_VIEWER);
+      } else {
+        const input = window.prompt('Enter admin password (current time in HHMM format)');
+        if (input !== null) {
+          const expectedPassword = getCurrentTimePassword();
+          if (input.trim() === expectedPassword) {
+            setRole(ROLE_ADMIN);
+          } else {
+            window.alert('Invalid password. Admin mode not enabled.');
+          }
+        }
+      }
+
+      clickCountRef.current = 0;
+      window.clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
+  };
 
   return (
     <div className="portal-layout">
@@ -49,6 +92,18 @@ function MainLayout() {
             <span />
             <span />
           </button>
+
+          <label className="topnav-role-switch" aria-label="Application role">
+            <span>Mode</span>
+            <span>{role === ROLE_ADMIN ? 'Admin' : 'Viewer'}</span>
+            <button
+              type="button"
+              className="role-secret-trigger"
+              title="Secret mode switch"
+              aria-label="Secret mode switch"
+              onClick={handleSecretRoleTrigger}
+            />
+          </label>
         </div>
       </header>
 

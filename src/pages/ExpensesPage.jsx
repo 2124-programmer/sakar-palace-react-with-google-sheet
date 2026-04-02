@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import DataTable from '../components/common/DataTable';
 import PageHeader from '../components/common/PageHeader';
+import { useAppRole } from '../hooks/useAppRole';
 import { useExpenses } from '../hooks/useExpenses';
 import { formatCurrency } from '../utils/formatters';
 
@@ -43,6 +44,7 @@ const EMPTY_FORM = {
 
 function ExpensesPage() {
   const { loading, error, isUsingFallback, data: expenseData } = useExpenses();
+  const { isAdmin } = useAppRole();
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [managedRecords, setManagedRecords] = useState([]);
@@ -178,12 +180,14 @@ function ExpensesPage() {
   };
 
   const openAddModal = () => {
+    if (!isAdmin) return;
     resetForm();
     setIsFormModalOpen(true);
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    if (!isAdmin) return;
 
     if (!form.title.trim() || !form.month.trim() || !form.category.trim()) return;
 
@@ -232,6 +236,7 @@ function ExpensesPage() {
   };
 
   const handleEdit = (record) => {
+    if (!isAdmin) return;
     setEditingId(record.id);
     setForm({
       month: record.month || 'Jan',
@@ -246,10 +251,12 @@ function ExpensesPage() {
   };
 
   const requestDelete = (record) => {
+    if (!isAdmin) return;
     setDeleteTarget(record);
   };
 
   const confirmDelete = () => {
+    if (!isAdmin) return;
     if (!deleteTarget) return;
 
     setManagedRecords((previous) => previous.filter((record) => record.id !== deleteTarget.id));
@@ -260,6 +267,7 @@ function ExpensesPage() {
   };
 
   const handleStatusChange = (recordId, status) => {
+    if (!isAdmin) return;
     setManagedRecords((previous) =>
       previous.map((record) =>
         record.id === recordId
@@ -274,6 +282,7 @@ function ExpensesPage() {
   };
 
   const handleResetFromSheet = () => {
+    if (!isAdmin) return;
     setManagedRecords(records);
     resetForm();
   };
@@ -292,18 +301,25 @@ function ExpensesPage() {
       key: 'status',
       label: 'Status',
       renderCell: (value, row) => (
-        <select
-          className="field-select field-select-sm"
-          value={value}
-          onChange={(event) => handleStatusChange(row.id, event.target.value)}
-        >
-          <option value="pending">Pending</option>
-          <option value="paid">Paid</option>
-        </select>
+        isAdmin ? (
+          <select
+            className="field-select field-select-sm"
+            value={value}
+            onChange={(event) => handleStatusChange(row.id, event.target.value)}
+          >
+            <option value="pending">Pending</option>
+            <option value="paid">Paid</option>
+          </select>
+        ) : (
+          <span className="status-chip">{value === 'paid' ? 'Paid' : 'Pending'}</span>
+        )
       )
     },
-    { key: 'paidDate', label: 'Paid Date', renderCell: (value) => value || '-' },
-    {
+    { key: 'paidDate', label: 'Paid Date', renderCell: (value) => value || '-' }
+  ];
+
+  if (isAdmin) {
+    columns.push({
       key: 'actions',
       label: 'Actions',
       renderCell: (_, row) => (
@@ -316,8 +332,8 @@ function ExpensesPage() {
           </button>
         </>
       )
-    }
-  ];
+    });
+  }
 
   return (
     <div className="page-container">
@@ -329,6 +345,8 @@ function ExpensesPage() {
       {isUsingFallback ? (
         <div className="dashboard-note">Showing fallback sample data. Add env keys to fetch from Google Sheets.</div>
       ) : null}
+
+      {!isAdmin ? <div className="dashboard-note">Viewer mode: You can view expenses only.</div> : null}
 
       
 
@@ -372,13 +390,17 @@ function ExpensesPage() {
           </select>
         </label>
 
-        <button className="btn btn-secondary" type="button" onClick={handleResetFromSheet}>
-          Reset To Sheet Data
-        </button>
+        {isAdmin ? (
+          <button className="btn btn-secondary" type="button" onClick={handleResetFromSheet}>
+            Reset To Sheet Data
+          </button>
+        ) : null}
 
-        <button className="btn btn-primary" type="button" onClick={openAddModal}>
-          Add Expense
-        </button>
+        {isAdmin ? (
+          <button className="btn btn-primary" type="button" onClick={openAddModal}>
+            Add Expense
+          </button>
+        ) : null}
       </div>
 
       <DataTable columns={columns} rows={filteredRows} />
@@ -453,7 +475,7 @@ function ExpensesPage() {
         </article>
       </section>
 
-      {isFormModalOpen ? (
+      {isAdmin && isFormModalOpen ? (
         <div className="modal-overlay" role="presentation">
           <div className="modal-card" role="dialog" aria-modal="true" aria-label="Expense form">
             <div className="modal-header">
@@ -526,7 +548,7 @@ function ExpensesPage() {
         </div>
       ) : null}
 
-      {deleteTarget ? (
+      {isAdmin && deleteTarget ? (
         <div className="modal-overlay" role="presentation">
           <div className="modal-card modal-card-sm" role="dialog" aria-modal="true" aria-label="Delete confirmation">
             <h3>Confirm Delete</h3>
