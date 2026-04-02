@@ -36,14 +36,72 @@ function MaintenancePage() {
     });
   }, [view, records, query]);
 
+  const isAdminView = view === 'admin';
+
+  const monthlyRecap = useMemo(() => {
+    const totalReceivedByMonth = {};
+    const totalRecordCount = records.length || 1;
+    const requiredByMonth = {};
+    const pendingByMonth = {};
+    const advancedByMonth = {};
+
+    months.forEach((month) => {
+      totalReceivedByMonth[month] = rows.reduce(
+        (total, row) => total + Number(row.months?.[month] || 0),
+        0
+      );
+
+      const adminRequired = Number(summaries.required?.[month] || 0);
+      const perHeadFromSheet = Number(summaries.amountPerHeadByMonth?.[month] || 0);
+      const perHeadRequired =
+        perHeadFromSheet > 0 ? perHeadFromSheet : adminRequired > 0 ? adminRequired / totalRecordCount : 0;
+
+      requiredByMonth[month] = isAdminView ? adminRequired : perHeadRequired;
+
+      const received = totalReceivedByMonth[month];
+      pendingByMonth[month] = isAdminView
+        ? Number(summaries.pendings?.[month] || 0)
+        : perHeadRequired - received;
+
+      advancedByMonth[month] = isAdminView
+        ? Number(summaries.advancedJamaByMonth?.[month] || 0)
+        : Math.max(received - perHeadRequired, 0);
+    });
+
+    return {
+      totalReceivedByMonth,
+      requiredByMonth,
+      pendingByMonth,
+      advancedByMonth
+    };
+  }, [isAdminView, months, records.length, rows, summaries]);
+
   if (loading) return <div className="page-container">Loading maintenance data from Google Sheets...</div>;
 
-  const getSummaryValue = (summaryObject) => {
-    if (!summaryObject) return 0;
+  const getSummaryValue = (summaryObject, fallbackByMonth = {}) => {
+    const ifAllMonths = (obj) =>
+      obj
+        ? Object.values(obj).reduce((total, value) => total + Number(value || 0), 0)
+        : 0;
+
     if (selectedMonth === 'all') {
-      return Object.values(summaryObject).reduce((total, value) => total + Number(value || 0), 0);
+      if (!isAdminView) return ifAllMonths(fallbackByMonth);
+
+      const summaryTotal = ifAllMonths(summaryObject);
+      if (summaryTotal > 0) return summaryTotal;
+      return ifAllMonths(fallbackByMonth);
     }
-    return Number(summaryObject[selectedMonth] || 0);
+
+    if (!isAdminView) {
+      return Number(fallbackByMonth[selectedMonth] || 0);
+    }
+
+    const explicitMonthValue = summaryObject?.[selectedMonth];
+    if (explicitMonthValue !== undefined && explicitMonthValue !== null && String(explicitMonthValue).trim() !== '') {
+      return Number(explicitMonthValue || 0);
+    }
+
+    return Number(fallbackByMonth[selectedMonth] || 0);
   };
 
   const visibleTotalPaid = rows.reduce((total, row) => total + Number(row.totalPaid || 0), 0);
@@ -131,15 +189,15 @@ function MaintenancePage() {
         </article>
         <article className="stat-card">
           <p className="stat-card-label">Collected {selectedMonth === 'all' ? '(All Months)' : `(${selectedMonth})`}</p>
-          <p className="stat-card-value">{formatCurrency(selectedMonth === 'all' ? visibleTotalPaid : getSummaryValue(summaries.totalReceived))}</p>
+          <p className="stat-card-value">{formatCurrency(selectedMonth === 'all' ? visibleTotalPaid : getSummaryValue(summaries.totalReceived, monthlyRecap.totalReceivedByMonth))}</p>
         </article>
         <article className="stat-card">
           <p className="stat-card-label">Required</p>
-          <p className="stat-card-value">{formatCurrency(getSummaryValue(summaries.required))}</p>
+          <p className="stat-card-value">{formatCurrency(getSummaryValue(summaries.required, monthlyRecap.requiredByMonth))}</p>
         </article>
         <article className="stat-card">
           <p className="stat-card-label">Pending / Advanced</p>
-          <p className="stat-card-value">{formatCurrency(selectedMonth === 'all' ? visibleAdvancedJama : getSummaryValue(summaries.pendings))}</p>
+          <p className="stat-card-value">{formatCurrency(selectedMonth === 'all' ? visibleAdvancedJama : getSummaryValue(summaries.pendings, monthlyRecap.pendingByMonth))}</p>
         </article>
       </section>
 
@@ -164,25 +222,31 @@ function MaintenancePage() {
                 <tr>
                   <td>Total Received</td>
                   {months.map((month) => (
-                    <td key={`received-${month}`}>{formatCurrency(summaries.totalReceived?.[month] || 0)}</td>
+                    <td key={`received-${month}`}>
+                      {formatCurrency(
+                        isAdminView
+                          ? summaries.totalReceived?.[month] ?? monthlyRecap.totalReceivedByMonth?.[month] ?? 0
+                          : monthlyRecap.totalReceivedByMonth?.[month] ?? 0
+                      )}
+                    </td>
                   ))}
                 </tr>
                 <tr>
                   <td>Required</td>
                   {months.map((month) => (
-                    <td key={`required-${month}`}>{formatCurrency(summaries.required?.[month] || 0)}</td>
+                    <td key={`required-${month}`}>{formatCurrency(monthlyRecap.requiredByMonth?.[month] || 0)}</td>
                   ))}
                 </tr>
                 <tr>
                   <td>Pending</td>
                   {months.map((month) => (
-                    <td key={`pending-${month}`}>{formatCurrency(summaries.pendings?.[month] || 0)}</td>
+                    <td key={`pending-${month}`}>{formatCurrency(monthlyRecap.pendingByMonth?.[month] || 0)}</td>
                   ))}
                 </tr>
                 <tr>
                   <td>Advanced Jama</td>
                   {months.map((month) => (
-                    <td key={`advanced-${month}`}>{formatCurrency(summaries.advancedJamaByMonth?.[month] || 0)}</td>
+                    <td key={`advanced-${month}`}>{formatCurrency(monthlyRecap.advancedByMonth?.[month] || 0)}</td>
                   ))}
                 </tr>
               </tbody>

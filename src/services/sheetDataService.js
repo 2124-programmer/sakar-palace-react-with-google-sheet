@@ -159,8 +159,13 @@ const extractMonthValues = (row, monthKeys) =>
 
 const findMaintenanceSummaryRow = (rows, labels) =>
   rows.find((row) => {
-    const label = normalize(findValue(row, ['flatno', 'flat no', 'flat no.']));
-    return labels.includes(label);
+    if (!row) return false;
+
+    const normalizedRowValues = Object.values(row)
+      .map((value) => normalize(value))
+      .filter((value) => value);
+
+    return normalizedRowValues.some((value) => labels.includes(value));
   });
 
 const sumMonthValues = (monthValues) =>
@@ -212,6 +217,13 @@ const mapMaintenanceData = (rows) =>
     const requiredRow = findMaintenanceSummaryRow(rows, ['required']);
     const pendingsRow = findMaintenanceSummaryRow(rows, ['pendings', 'pendings', 'pending']);
     const advancedJamaRow = findMaintenanceSummaryRow(rows, ['advanced jama']);
+    const amountPerHeadRow = findMaintenanceSummaryRow(rows, [
+      'amount/head',
+      'ammount/head',
+      'amount per head',
+      'maintenance/head',
+      'per head'
+    ]);
 
     return {
       records,
@@ -220,7 +232,8 @@ const mapMaintenanceData = (rows) =>
         totalReceived: extractMonthValues(totalReceivedRow, monthKeys),
         required: extractMonthValues(requiredRow, monthKeys),
         pendings: extractMonthValues(pendingsRow, monthKeys),
-        advancedJamaByMonth: extractMonthValues(advancedJamaRow, monthKeys)
+        advancedJamaByMonth: extractMonthValues(advancedJamaRow, monthKeys),
+        amountPerHeadByMonth: extractMonthValues(amountPerHeadRow, monthKeys)
       },
       totals: {
         advancedJamaMembers: records.reduce((total, row) => total + parseNumber(row.advancedJama), 0)
