@@ -1,7 +1,7 @@
 function DataTable({ columns, rows }) {
   return (
     <div className="table-shell">
-      <table>
+      <table className="standard-table">
         <thead>
           <tr>
             {columns.map((column) => (

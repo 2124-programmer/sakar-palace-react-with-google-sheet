@@ -50,6 +50,39 @@ const MAINTENANCE_HEADER_ALIASES = [
   'dec-26'
 ];
 
+const EXPENSES_HEADER_ALIASES = [
+  'sr no',
+  'sr no.',
+  'sr.',
+  'sr',
+  'month',
+  'expense name',
+  'expenses title',
+  'expense title',
+  'title',
+  'category',
+  'amount',
+  'pay to',
+  'paid date',
+  'jan-26',
+  'feb-26',
+  'mar-26',
+  'apr-26',
+  'may-26',
+  'jun-26',
+  'jul-26',
+  'aug-26',
+  'sep-26',
+  'oct-26',
+  'nov-26',
+  'dec-26',
+  'total for 2026',
+  'total 2026',
+  'total',
+  'status',
+  'payment status'
+];
+
 const MONTH_KEY_PATTERN = /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[- ]?\d{2}$/i;
 
 const buildUrl = (sheetId, apiKey, range) =>
@@ -242,16 +275,179 @@ const mapMaintenanceData = (rows) =>
   })();
 
 // Map Expenses Details sheet
-const mapExpenses = (rows) =>
-  rows
-    .filter((row) => findValue(row, ['sr no', 'sr.', 'sr', 'no']))
-    .map((row, idx) => ({
-      id: row.id || `exp-${idx + 1}`,
-      srNo: findValue(row, ['sr no', 'sr.', 'sr']),
-      title: findValue(row, ['expenses title', 'expense title', 'title', 'description']),
-      // month columns will be added separately
-      ...row
-    }));
+const mapExpenses = (rows) => {
+  const findExpenseValue = (row, aliases, fallback = '') => {
+    const exact = findValue(row, aliases, '');
+    if (String(exact || '').trim() !== '') return exact;
+
+    const keys = Object.keys(row || {});
+    const fuzzyKey = keys.find((key) => {
+      const normalizedKey = normalize(key);
+      return aliases.some((alias) => normalizedKey.includes(normalize(alias)));
+    });
+
+    return fuzzyKey ? row[fuzzyKey] : fallback;
+  };
+
+  const normalizeStatus = (value) => (normalize(value) === 'paid' ? 'paid' : 'pending');
+
+  const normalizeMonth = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    const lower = normalize(raw);
+    const monthMap = {
+      jan: 'Jan',
+      feb: 'Feb',
+      mar: 'Mar',
+      apr: 'Apr',
+      may: 'May',
+      jun: 'Jun',
+      jul: 'Jul',
+      aug: 'Aug',
+      sep: 'Sep',
+      oct: 'Oct',
+      nov: 'Nov',
+      dec: 'Dec'
+    };
+
+    const monthKey = Object.keys(monthMap).find((key) => lower.startsWith(key));
+    if (monthKey) return monthMap[monthKey];
+    return raw;
+  };
+
+  const monthSortOrder = {
+    Jan: 1,
+    Feb: 2,
+    Mar: 3,
+    Apr: 4,
+    May: 5,
+    Jun: 6,
+    Jul: 7,
+    Aug: 8,
+    Sep: 9,
+    Oct: 10,
+    Nov: 11,
+    Dec: 12
+  };
+
+  const hasLedgerColumns = rows.some((row) => {
+    const month = findExpenseValue(row, ['month']);
+    const amount = findExpenseValue(row, ['amount']);
+    const title = findExpenseValue(row, ['expense name', 'expenses title', 'expense title', 'title', 'description']);
+    return String(month || '').trim() && String(title || '').trim() && String(amount || '').trim();
+  });
+
+  if (hasLedgerColumns) {
+    const records = rows
+      .filter((row) => {
+        const title = findExpenseValue(row, ['expense name', 'expenses title', 'expense title', 'title', 'description']);
+        const month = normalizeMonth(findExpenseValue(row, ['month']));
+        const isSummaryRow = ['total kharch', 'total expense', 'total expenses'].includes(normalize(title));
+        return String(title || '').trim() && String(month || '').trim() && !isSummaryRow;
+      })
+      .map((row, idx) => ({
+        id: row.id || `exp-${idx + 1}`,
+        srNo: findExpenseValue(row, ['sr no', 'sr no.', 'sr.', 'sr', 'no']) || `${idx + 1}`,
+        month: normalizeMonth(findExpenseValue(row, ['month'])),
+        title: findExpenseValue(row, ['expense name', 'expenses title', 'expense title', 'title', 'description']),
+        category: findExpenseValue(row, ['category']),
+        amount: parseNumber(findExpenseValue(row, ['amount'], '0')),
+        payTo: findExpenseValue(row, ['pay to', 'payto']),
+        status: normalizeStatus(findExpenseValue(row, ['status', 'payment status'], 'pending')),
+        paidDate: findExpenseValue(row, ['paid date', 'payment date'], '')
+      }));
+
+    const months = [...new Set(records.map((record) => record.month))].sort(
+      (left, right) => (monthSortOrder[left] || 99) - (monthSortOrder[right] || 99)
+    );
+
+    const categories = [...new Set(records.map((record) => record.category).filter(Boolean))].sort();
+
+    const totalKharchByMonth = months.reduce((accumulator, month) => {
+      accumulator[month] = records.reduce(
+        (total, record) => total + (record.month === month ? Number(record.amount || 0) : 0),
+        0
+      );
+      return accumulator;
+    }, {});
+
+    const totalFor2026 = records.reduce((total, record) => total + Number(record.amount || 0), 0);
+
+    return {
+      records,
+      months,
+      categories,
+      summaries: {
+        totalKharchByMonth,
+        totalFor2026
+      }
+    };
+  }
+
+  const monthKeys = getMonthKeysFromRow(rows[0] || {});
+
+  const records = rows
+    .filter((row) => {
+      const srNo = findExpenseValue(row, ['sr no', 'sr no.', 'sr.', 'sr', 'no']);
+      const title = findExpenseValue(row, ['expenses title', 'expense title', 'title', 'description']);
+      const isSummaryRow = ['total kharch', 'total expense', 'total expenses'].includes(normalize(title));
+      return String(srNo || '').trim() && String(title || '').trim() && !isSummaryRow;
+    })
+    .map((row, idx) => {
+      const months = extractMonthValues(row, monthKeys);
+      const totalFromSheet = parseNumber(findExpenseValue(row, ['total for 2026', 'total 2026', 'total'], '0'));
+      const statusValue = normalize(findExpenseValue(row, ['status', 'payment status'], 'pending'));
+      const status = statusValue === 'paid' ? 'paid' : 'pending';
+
+      return {
+        id: row.id || `exp-${idx + 1}`,
+        srNo: findExpenseValue(row, ['sr no', 'sr no.', 'sr.', 'sr', 'no']),
+        title: findExpenseValue(row, ['expenses title', 'expense title', 'title', 'description']),
+        months,
+        total: totalFromSheet || sumMonthValues(months),
+        status
+      };
+    });
+
+  const totalKharchRow = findMaintenanceSummaryRow(rows, ['total kharch', 'total expense', 'total expenses']);
+
+  const computedTotalKharchByMonth = monthKeys.reduce((accumulator, monthKey) => {
+    accumulator[monthKey] = records.reduce(
+      (total, row) => total + parseNumber(row.months?.[monthKey]),
+      0
+    );
+    return accumulator;
+  }, {});
+
+  const totalKharchByMonth = extractMonthValues(totalKharchRow, monthKeys);
+  const summaryFromSheet = Object.values(totalKharchByMonth).some((value) => Number(value) !== 0);
+  const totalFor2026FromSheet = parseNumber(
+    findValue(totalKharchRow, ['total for 2026', 'total 2026', 'total'], '0')
+  );
+  const computedTotalFor2026 = records.reduce((total, row) => total + parseNumber(row.total), 0);
+
+  return {
+    records: records.flatMap((record) =>
+      monthKeys.map((month) => ({
+        id: `${record.id}-${month}`,
+        srNo: record.srNo,
+        month: normalizeMonth(month),
+        title: record.title,
+        category: '',
+        amount: parseNumber(record.months?.[month] || 0),
+        payTo: '',
+        status: record.status || 'pending',
+        paidDate: ''
+      }))
+    ),
+    months: monthKeys.map((month) => normalizeMonth(month)),
+    categories: [],
+    summaries: {
+      totalKharchByMonth: summaryFromSheet ? totalKharchByMonth : computedTotalKharchByMonth,
+      totalFor2026: totalFor2026FromSheet || computedTotalFor2026
+    }
+  };
+};
 
 export const hasSheetConfig = () =>
   Boolean(import.meta.env.VITE_GOOGLE_SHEET_ID);
@@ -375,10 +571,10 @@ export async function fetchExpensesFromSheets() {
 
     const payload = await response.json();
     console.log('[sheetDataService] 📊 Raw rows count:', payload.values?.length || 0);
-    const rows = valuesArrayToObjects(payload.values || []);
+    const rows = valuesArrayToObjectsWithAutoHeader(payload.values || [], EXPENSES_HEADER_ALIASES);
     console.log('[sheetDataService] 🔄 Parsed rows count:', rows.length);
     const mapped = mapExpenses(rows);
-    console.log('[sheetDataService] ✅ Expenses mapped successfully, count:', mapped.length);
+    console.log('[sheetDataService] ✅ Expenses mapped successfully, count:', mapped.records.length);
     return mapped;
   } catch (err) {
     console.error('[sheetDataService] 💥 Error fetching expenses:', err);
