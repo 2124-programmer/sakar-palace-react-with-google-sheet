@@ -1,11 +1,12 @@
 const DEFAULT_RANGES = {
   stats: 'Dashboard-Stats!A1:Z200',
-  announcements: 'Announcements!A1:Z200',
-  events: 'Events!A1:Z200',
-  emergencyContacts: 'Emergency-Contacts!A1:Z200',
+  announcements: 'latest-announcements!A1:Z200',
+  emergencyContacts: 'emergency-contacts!A1:Z200',
   complaints: 'Complaints!A1:Z200',
-  maintenance: 'Maintainance-Status!A1:Z200'
+  maintenance: 'MaintenancePaid!A1:Z200'
 };
+
+const MONTH_KEY_PATTERN = /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[- ]?\d{2}$/i;
 
 const buildUrl = (sheetId, apiKey, range) =>
   `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}?key=${apiKey}`;
@@ -43,9 +44,21 @@ const mapStats = (rows) => {
   const first = rows[0] || {};
   return {
     totalFlats: parseNumber(findValue(first, ['total flats', 'totalflats', 'flats'])),
-    occupiedFlats: parseNumber(findValue(first, ['occupied', 'occupied flats', 'occupiedflats'])),
-    pendingDues: parseNumber(findValue(first, ['pending dues', 'pendingdues', 'dues pending'])),
-    vacantFlats: parseNumber(findValue(first, ['vacant flats', 'vacantflats', 'vacant']))
+    totalMaintenanceAdvanced: parseNumber(
+      findValue(first, ['total maintenance advanced', 'total mentenance advanced', 'maintenance advanced'])
+    ),
+    activeComplaints: parseNumber(findValue(first, ['active complaints', 'open complaints'])),
+    inProgressComplaints: parseNumber(findValue(first, ['in progress complaints', 'progress complaints'])),
+    resolvedComplaints: parseNumber(findValue(first, ['resolved complaints', 'closed complaints'])),
+    activeMonth: findValue(first, ['active month', 'current month'], ''),
+    currentMonthMaintenancePerHead: parseNumber(
+      findValue(first, ['current month maintainance per head', 'current month maintenance per head', 'maintenance per head'])
+    ),
+    maintenancePaidMembers: parseNumber(
+      findValue(first, ['mentanance paid members', 'maintenance paid members', 'paid members'])
+    ),
+    pendingMembers: parseNumber(findValue(first, ['pending members', 'unpaid members'])),
+    lightBillForActiveMonth: findValue(first, ['light bill for active month', 'light bill active month'], '')
   };
 };
 
@@ -57,19 +70,12 @@ const mapAnnouncements = (rows) =>
     message: findValue(row, ['message', 'details', 'description'], '')
   }));
 
-const mapEvents = (rows) =>
-  rows.map((row, index) => ({
-    id: row.id || `evt-${index + 1}`,
-    title: findValue(row, ['title', 'event', 'event name'], 'Event'),
-    date: findValue(row, ['date', 'event date'], ''),
-    location: findValue(row, ['location', 'venue'], '')
-  }));
-
 const mapEmergencyContacts = (rows) =>
   rows.map((row, index) => ({
     id: row.id || `cnt-${index + 1}`,
     role: findValue(row, ['role', 'name', 'contact type'], 'Contact'),
-    phone: findValue(row, ['phone', 'number', 'mobile', 'contact'], '')
+    title: findValue(row, ['title', 'person', 'name'], ''),
+    contact: findValue(row, ['contact', 'phone', 'number', 'mobile'], '')
   }));
 
 const mapComplaints = (rows) =>
@@ -79,44 +85,79 @@ const mapComplaints = (rows) =>
     status: findValue(row, ['status', 'state'], 'Open')
   }));
 
-const mapMaintenanceSummary = (rows) => {
-  const first = rows[0] || {};
+const mapMaintenanceSummary = (rows, stats) => {
+  const activeMonth = String(stats?.activeMonth || '').trim();
+  const normalizedActiveMonth = normalize(activeMonth);
+  const monthKey = Object.keys(rows[0] || {}).find((key) => normalize(key) === normalizedActiveMonth);
+
+  const amountHeadRow = rows.find((row) =>
+    Object.values(row || {}).some((value) =>
+      ['amount/head', 'ammount/head', 'maintenance/head', 'per head'].includes(normalize(value))
+    )
+  );
+
+  const perHeadAmount = monthKey
+    ? parseNumber(amountHeadRow?.[monthKey]) || parseNumber(stats?.currentMonthMaintenancePerHead)
+    : parseNumber(stats?.currentMonthMaintenancePerHead);
+
+  const records = rows.filter((row) => {
+    const flatNo = findValue(row, ['flat no', 'flatno', 'flat no.']);
+    const resident = findValue(row, ['resident', 'owner', 'name']);
+    return flatNo && resident;
+  });
+
+  const pendingMembersList = monthKey
+    ? records
+        .map((row) => {
+          const paidAmount = parseNumber(row[monthKey]);
+          const resident = findValue(row, ['resident', 'owner', 'name']);
+          const flatNo = findValue(row, ['flat no', 'flatno', 'flat no.']);
+          const pendingAmount = Math.max(perHeadAmount - paidAmount, 0);
+
+          return {
+            id: row.id,
+            flatNo,
+            resident,
+            pendingAmount,
+            paidAmount
+          };
+        })
+        .filter((item) => item.pendingAmount > 0)
+    : [];
 
   return {
-    dueAmount: parseNumber(findValue(first, ['due amount', 'due', 'monthly due'])),
-    lastPaymentAmount: parseNumber(findValue(first, ['last payment amount', 'last payment', 'paid amount'])),
-    lastPaymentDate: findValue(first, ['last payment date', 'payment date', 'last paid date'], '')
+    pendingMembersList
   };
 };
 
 const fallbackDashboardData = {
   stats: {
-    totalFlats: 120,
-    occupiedFlats: 110,
-    pendingDues: 25800,
-    vacantFlats: 10
+    totalFlats: 16,
+    totalMaintenanceAdvanced: 1500,
+    activeComplaints: 1,
+    inProgressComplaints: 1,
+    resolvedComplaints: 1,
+    activeMonth: 'Mar-26',
+    currentMonthMaintenancePerHead: 320,
+    maintenancePaidMembers: 16,
+    pendingMembers: 0,
+    lightBillForActiveMonth: 'Mar - 3120'
   },
   announcements: [
     { id: 'ann-1', title: 'Water Supply Maintenance Tonight', date: '2026-03-25', message: '' },
     { id: 'ann-2', title: 'Society Meeting on Sunday', date: '2026-03-20', message: '' }
   ],
-  events: [
-    { id: 'evt-1', title: 'Holi Celebration', date: '2026-03-10', location: '' },
-    { id: 'evt-2', title: 'Yoga Session', date: '2026-03-15', location: '' }
-  ],
   emergencyContacts: [
-    { id: 'cnt-1', role: 'Security', phone: '+91 9876543210' },
-    { id: 'cnt-2', role: 'Electrician', phone: '+91 9876601234' },
-    { id: 'cnt-3', role: 'Doctor', phone: '+91 9876123456' }
+    { id: 'cnt-1', role: 'Admin', title: 'Sharad', contact: '9730308602' },
+    { id: 'cnt-2', role: 'Watchmen', title: 'Ramesh Dada', contact: '9022661416' },
+    { id: 'cnt-3', role: 'Light Bill', title: 'Sakar B Wing', contact: '49150176858' }
   ],
   complaints: [
     { id: 'cmp-1', title: 'Lift not working', status: 'In Progress' },
     { id: 'cmp-2', title: 'Leakage in basement', status: 'Resolved' }
   ],
   maintenanceSummary: {
-    dueAmount: 2500,
-    lastPaymentAmount: 3000,
-    lastPaymentDate: '2026-02-05'
+    pendingMembersList: []
   }
 };
 
@@ -163,15 +204,14 @@ export async function fetchDashboardFromSheets(customRanges = {}) {
   const result = {
     stats: mapStats(mapped.stats || []),
     announcements: mapAnnouncements(mapped.announcements || []),
-    events: mapEvents(mapped.events || []),
+    events: [],
     emergencyContacts: mapEmergencyContacts(mapped.emergencyContacts || []),
     complaints: mapComplaints(mapped.complaints || []),
-    maintenanceSummary: mapMaintenanceSummary(mapped.maintenance || [])
+    maintenanceSummary: mapMaintenanceSummary(mapped.maintenance || [], mapStats(mapped.stats || []))
   };
 
   console.log('[googleSheets] fetchDashboardFromSheets: success', {
     announcements: result.announcements.length,
-    events: result.events.length,
     emergencyContacts: result.emergencyContacts.length,
     complaints: result.complaints.length
   });

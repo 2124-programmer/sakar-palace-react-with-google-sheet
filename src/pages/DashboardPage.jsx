@@ -28,6 +28,8 @@ function DashboardPage() {
   }
 
   const complaintCount = data.complaints.length;
+  const stats = data.stats || {};
+  const pendingMembersList = data.maintenanceSummary?.pendingMembersList || [];
 
   const getStatusClass = (status) => {
     const key = String(status || '').trim().toLowerCase();
@@ -52,51 +54,107 @@ function DashboardPage() {
       <section className="home-stats home-stats-row">
         <article className="mini-stat">
           <p>Total Flats</p>
-          <strong>{data.stats.totalFlats}</strong>
+          <strong>{stats.totalFlats}</strong>
         </article>
         <article className="mini-stat occupied">
-          <p>Occupied</p>
-          <strong>{data.stats.occupiedFlats}</strong>
+          <p>Maintenance Advanced</p>
+          <strong>{formatCurrency(stats.totalMaintenanceAdvanced)}</strong>
         </article>
         <article className="mini-stat dues">
-          <p>Pending Dues</p>
-          <strong>{formatCurrency(data.stats.pendingDues)}</strong>
+          <p>Complaints Summary</p>
+          <strong>{`${stats.activeComplaints} / ${stats.inProgressComplaints} / ${stats.resolvedComplaints}`}</strong>
+          <p className="dashboard-bottom-note">Active / In Progress / Resolved</p>
         </article>
         <article className="mini-stat vacant">
-          <p>Vacant Flats</p>
-          <strong>{data.stats.vacantFlats}</strong>
+          <p>Light Bill</p>
+          <strong>{stats.lightBillForActiveMonth || '-'}</strong>
         </article>
       </section>
 
       <section className="dashboard-card-grid dashboard-card-grid-two">
+        <article className="home-card dashboard-card compact-card">
+          <h3>Current Month Details : {stats.activeMonth || '-'}</h3>
+          <div className="table-shell dashboard-table-shell">
+            <table className="dashboard-mini-table">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                
+                <tr>
+                  <td>Maintenance Per Head</td>
+                  <td>{formatCurrency(stats.currentMonthMaintenancePerHead)}</td>
+                </tr>
+                <tr>
+                  <td>Paid Members</td>
+                  <td>{stats.maintenancePaidMembers}</td>
+                </tr>
+                <tr>
+                  <td>Pending Members</td>
+                  <td>{stats.pendingMembers}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+        <article className="home-card dashboard-card compact-card">
+          <div className="card-header-inline">
+            <h3>Maintainance Pending List</h3>
+            <span className="dashboard-chip">{pendingMembersList.length}</span>
+          </div>
+          {pendingMembersList.length > 0 ? (
+            <div className="table-shell dashboard-table-shell">
+              <table className="dashboard-mini-table">
+                <thead>
+                  <tr>
+                    <th>Flat No</th>
+                    <th>Resident</th>
+                    <th>Pending Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingMembersList.slice(0, 6).map((member) => (
+                    <tr key={member.id}>
+                      <td>{member.flatNo}</td>
+                      <td>{member.resident}</td>
+                      <td>{formatCurrency(member.pendingAmount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="dashboard-bottom-note">No pending members for the active month.</p>
+          )}
+        </article>
+
         <article className="home-card dashboard-card compact-card">
           <h3>Emergency Contacts</h3>
-          <ul className="contact-list emergency-list">
-            {data.emergencyContacts.map((item) => (
-              <li key={item.id}>
-                <span>{item.role}</span>
-                <strong>{item.phone}</strong>
-              </li>
-            ))}
-          </ul>
+          <div className="table-shell dashboard-table-shell">
+            <table className="dashboard-mini-table">
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>Name</th>
+                  <th>Contact</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.emergencyContacts.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.role}</td>
+                    <td>{item.title || '-'}</td>
+                    <td>{item.contact || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </article>
 
-        <article className="home-card dashboard-card compact-card">
-          <h3>Maintenance Dues</h3>
-          <p className="info-line">
-            Due Amount: <strong>{formatCurrency(data.maintenanceSummary.dueAmount)}</strong>
-          </p>
-          <p className="info-line">
-            Last Payment: <strong>{formatCurrency(data.maintenanceSummary.lastPaymentAmount)}</strong> on{' '}
-            {formatDate(data.maintenanceSummary.lastPaymentDate)}
-          </p>
-          <Link className="action-button" to="/maintenance">
-            Pay Now
-          </Link>
-        </article>
-      </section>
-
-      <section className="dashboard-card-grid dashboard-card-grid-two">
         <article className="home-card dashboard-card compact-card">
           <div className="card-header-inline">
             <h3>Recent Complaints</h3>
@@ -115,19 +173,6 @@ function DashboardPage() {
           <Link className="action-button action-alt" to="/notice-board">
             Report an Issue
           </Link>
-        </article>
-
-        <article className="home-card dashboard-card compact-card">
-          <h3>Upcoming Events</h3>
-          <ul className="home-list event-list">
-            {data.events.slice(0, 4).map((event) => (
-              <li key={event.id}>
-                <p className="list-title">{event.title}</p>
-                <small>{formatDate(event.date)}</small>
-              </li>
-            ))}
-          </ul>
-          <button type="button" className="ghost-button">View Calendar</button>
         </article>
       </section>
 

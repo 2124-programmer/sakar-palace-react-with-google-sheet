@@ -507,6 +507,21 @@ a {
   color: #516980;
 }
 
+.dashboard-table-shell {
+  box-shadow: none;
+  border-radius: 10px;
+}
+
+.dashboard-mini-table {
+  min-width: 0;
+}
+
+.dashboard-mini-table th,
+.dashboard-mini-table td {
+  padding: 9px 10px;
+  font-size: 0.88rem;
+}
+
 .page-container {
   max-width: 1200px;
 }
