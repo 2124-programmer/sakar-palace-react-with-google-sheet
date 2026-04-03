@@ -41,7 +41,7 @@ function MainLayout() {
       if (role === ROLE_ADMIN) {
         setRole(ROLE_VIEWER);
       } else {
-        const input = window.prompt('Enter admin password (current time in HHMM format)');
+        const input = window.prompt('Enter admin password');
         if (input !== null) {
           const expectedPassword = getCurrentTimePassword();
           if (input.trim() === expectedPassword) {

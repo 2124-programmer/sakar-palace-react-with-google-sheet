@@ -4,6 +4,7 @@ export const ROLE_ADMIN = 'admin';
 export const ROLE_VIEWER = 'viewer';
 
 const APP_ROLE_CHANGE_EVENT = 'sakar:app-role-change';
+let currentSessionRole = ROLE_VIEWER;
 
 const normalizeRole = (value) => (value === ROLE_VIEWER ? ROLE_VIEWER : ROLE_ADMIN);
 
@@ -13,10 +14,11 @@ const emitRoleChange = (role) => {
 };
 
 const persistRole = (role) => {
+  currentSessionRole = normalizeRole(role);
   emitRoleChange(role);
 };
 
-const readStoredRole = () => ROLE_VIEWER;
+const readStoredRole = () => currentSessionRole;
 
 export function useAppRole() {
   const [role, setRoleState] = useState(readStoredRole);
