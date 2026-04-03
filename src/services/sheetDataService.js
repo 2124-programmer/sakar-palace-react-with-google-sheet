@@ -23,6 +23,12 @@ const MEMBER_HEADER_ALIASES = [
   'contact',
   'phone',
   'mobile',
+  'role',
+  'access role',
+  'code',
+  'pin',
+  'login code',
+  'passcode',
   'family members',
   'family'
 ];
@@ -218,8 +224,10 @@ const mapMembers = (rows) =>
     wing: findValue(row, ['wing', 'tower']),
     flatNo: findValue(row, ['flatno', 'flat no', 'flat']),
     residentName: findValue(row, ['owner / tenant', 'owner/tenant', 'resident', 'name']),
-    occupancyType: findValue(row, ['type', 'occupancy type'], 'admin'),
+    occupancyType: findValue(row, ['type', 'occupancy type'], 'owner'),
     contact: findValue(row, ['contact', 'phone', 'mobile']),
+    accessRole: findValue(row, ['role', 'access role'], ''),
+    loginCode: findValue(row, ['code', 'pin', 'login code', 'passcode'], ''),
     familyMembers: findValue(row, ['family members', 'family'], '').split(',').filter(Boolean)
   }));
 

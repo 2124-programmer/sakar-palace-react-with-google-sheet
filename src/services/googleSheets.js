@@ -147,15 +147,6 @@ const fallbackDashboardData = {
     { id: 'ann-1', title: 'Water Supply Maintenance Tonight', date: '2026-03-25', message: '' },
     { id: 'ann-2', title: 'Society Meeting on Sunday', date: '2026-03-20', message: '' }
   ],
-  emergencyContacts: [
-    { id: 'cnt-1', role: 'Admin', title: 'Sharad', contact: '9730308602' },
-    { id: 'cnt-2', role: 'Watchmen', title: 'Ramesh Dada', contact: '9022661416' },
-    { id: 'cnt-3', role: 'Light Bill', title: 'Sakar B Wing', contact: '49150176858' }
-  ],
-  complaints: [
-    { id: 'cmp-1', title: 'Lift not working', status: 'In Progress' },
-    { id: 'cmp-2', title: 'Leakage in basement', status: 'Resolved' }
-  ],
   maintenanceSummary: {
     pendingMembersList: []
   }
