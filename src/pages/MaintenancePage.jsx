@@ -1,16 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import DataTable from '../components/common/DataTable';
 import PageHeader from '../components/common/PageHeader';
+import { useAuth } from '../hooks/useAuth';
+import { useAppRole } from '../hooks/useAppRole';
 import { useMaintenance } from '../hooks/useMaintenance';
 import { formatCurrency } from '../utils/formatters';
 
 const CURRENT_USER_FLAT = 'B-01';
 
 function MaintenancePage() {
+  const { user } = useAuth();
+  const { isAdmin } = useAppRole();
   const [view, setView] = useState('individual');
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [query, setQuery] = useState('');
   const { loading, error, isUsingFallback, data: maintenanceData } = useMaintenance();
+  const currentUserFlat = user?.flatNo || CURRENT_USER_FLAT;
 
   const records = maintenanceData?.records || [];
   const months = maintenanceData?.months || [];
@@ -21,12 +26,18 @@ function MaintenancePage() {
     console.log('[MaintenancePage] 🚀 Page rendered. Loading:', loading, '| Data count:', records?.length || 0, '| View:', view, '| Month:', selectedMonth, '| Using fallback:', isUsingFallback);
   }, [loading, records, view, selectedMonth, isUsingFallback]);
 
+  useEffect(() => {
+    if (!isAdmin && view === 'admin') {
+      setView('individual');
+    }
+  }, [isAdmin, view]);
+
   const rows = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
     return records.filter((row) => {
       const matchesView =
-        view === 'admin' || String(row.flatNo || '').toLowerCase() === CURRENT_USER_FLAT.toLowerCase();
+        (isAdmin && view === 'admin') || String(row.flatNo || '').toLowerCase() === String(currentUserFlat).toLowerCase();
       const matchesSearch =
         !normalizedQuery ||
         String(row.flatNo || '').toLowerCase().includes(normalizedQuery) ||
@@ -34,9 +45,9 @@ function MaintenancePage() {
 
       return matchesView && matchesSearch;
     });
-  }, [view, records, query]);
+  }, [currentUserFlat, isAdmin, view, records, query]);
 
-  const isAdminView = view === 'admin';
+  const isAdminView = isAdmin && view === 'admin';
 
   const monthlyRecap = useMemo(() => {
     const totalReceivedByMonth = {};
@@ -149,13 +160,15 @@ function MaintenancePage() {
         >
           Individual View
         </button>
-        <button
-          type="button"
-          onClick={() => setView('admin')}
-          className={view === 'admin' ? 'active' : ''}
-        >
-          Admin View
-        </button>
+        {isAdmin ? (
+          <button
+            type="button"
+            onClick={() => setView('admin')}
+            className={view === 'admin' ? 'active' : ''}
+          >
+            Admin View
+          </button>
+        ) : null}
       </div>
 
       <div className="toolbar maintenance-toolbar">
@@ -259,7 +272,7 @@ function MaintenancePage() {
           <ul className="simple-list">
             <li>
               <p className="list-title">Current Scope</p>
-              <p>{view === 'admin' ? 'Admin view for all flats' : `Individual view for ${CURRENT_USER_FLAT}`}</p>
+              <p>{isAdminView ? 'Admin view for all flats' : `Individual view for ${currentUserFlat}`}</p>
             </li>
             <li>
               <p className="list-title">Month Focus</p>
