@@ -62,10 +62,22 @@ function MainLayout() {
     <div className="portal-layout">
       <header className="topnav">
         <div className="topnav-inner">
-          <div className="topnav-brand">
+          <button
+            type="button"
+            className="topnav-burger"
+            aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((prev) => !prev)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+
+          <NavLink to="/" className="topnav-brand" onClick={closeMenu} aria-label="Go to dashboard">
             <span className="brand-icon">🏠</span>
             <span className="brand-name">{societyMeta.name}</span>
-          </div>
+          </NavLink>
 
           <nav className={`topnav-links${menuOpen ? ' open' : ''}`} aria-label="Main navigation">
             {navItems.map((item) => (
@@ -80,18 +92,6 @@ function MainLayout() {
               </NavLink>
             ))}
           </nav>
-
-          <button
-            type="button"
-            className="topnav-burger"
-            aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((prev) => !prev)}
-          >
-            <span />
-            <span />
-            <span />
-          </button>
 
           <label className="topnav-role-switch" aria-label="Application role">
             <span>Mode</span>

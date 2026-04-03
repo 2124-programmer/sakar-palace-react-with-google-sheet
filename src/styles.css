@@ -56,6 +56,7 @@ a {
   gap: 8px;
   white-space: nowrap;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .brand-icon {
@@ -859,8 +860,24 @@ tbody tr:hover {
 
 @media (max-width: 860px) {
   /* show hamburger, hide links by default */
+  .topnav-inner {
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
   .topnav-burger {
     display: flex;
+    order: 1;
+  }
+
+  .topnav-brand {
+    order: 2;
+    flex: 1;
+  }
+
+  .topnav-role-switch {
+    order: 3;
+    margin-left: auto;
   }
 
   .topnav-links {
