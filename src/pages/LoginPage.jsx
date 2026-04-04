@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 
 function LoginPage() {
   const { isAuthenticated, loading, login, testCredentials, isTestUserEnabled } = useAuth();
+  const { isAuthenticated, loading, login, testCredentials } = useAuth();
   const [mobile, setMobile] = useState('');
   const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
