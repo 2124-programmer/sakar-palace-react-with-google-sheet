@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 function LoginPage() {
-  const { isAuthenticated, loading, login, testCredentials } = useAuth();
+  const { isAuthenticated, loading, login, testCredentials, isTestUserEnabled } = useAuth();
   const [mobile, setMobile] = useState('');
   const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -34,6 +34,9 @@ function LoginPage() {
       <div className="auth-card">
         <h1>Society Portal Login</h1>
         <p>Login using your registered mobile number and 6-digit code.</p>
+        <div className={`auth-test-user-note${isTestUserEnabled ? '' : ' warning'}`}>
+          Test User Status: {isTestUserEnabled ? 'Enabled' : 'Disabled'}
+        </div>
         {testCredentials ? (
           <div className="auth-test-user-note">
             Dashboard Test User: {testCredentials.mobile} / {testCredentials.code}
