@@ -514,6 +514,16 @@ a {
   color: #45607b;
 }
 
+.auth-test-user-note {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #cfe0f2;
+  background: #eef5fc;
+  color: #2c5379;
+  font-size: 0.9rem;
+}
+
 .auth-form {
   display: flex;
   flex-direction: column;
