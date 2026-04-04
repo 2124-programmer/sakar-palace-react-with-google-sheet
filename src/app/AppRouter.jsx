@@ -8,8 +8,14 @@ import NoticeBoardPage from '../pages/NoticeBoardPage';
 import LoginPage from '../pages/LoginPage';
 import { useAuth } from '../hooks/useAuth';
 
+const AUTH_DISABLED_FOR_TESTING = true;
+
 function ProtectedLayout() {
   const { loading, isAuthenticated } = useAuth();
+
+  if (AUTH_DISABLED_FOR_TESTING) {
+    return <MainLayout />;
+  }
 
   if (loading) {
     return <div className="dashboard-feedback">Checking your login session...</div>;
@@ -27,7 +33,7 @@ function AppRouter() {
 
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/login" element={AUTH_DISABLED_FOR_TESTING ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route element={<ProtectedLayout />}>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/members" element={isDashboardOnlyUser ? <Navigate to="/" replace /> : <MembersPage />} />
