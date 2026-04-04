@@ -3,7 +3,7 @@ import { members as fallbackMembers } from '../data/societyData';
 import { fetchMembersFromSheets, hasSheetConfig } from '../services/sheetDataService';
 
 const AUTH_SESSION_STORAGE_KEY = 'sakar-auth-session-v1';
-const ENABLE_TEST_DASHBOARD_USER = String(import.meta.env.VITE_ENABLE_TEST_USER || '').trim().toLowerCase() !== 'false';
+const ENABLE_TEST_DASHBOARD_USER = String(import.meta.env.VITE_ENABLE_TEST_USER || '').trim().toLowerCase() === 'true';
 const TEST_DASHBOARD_USER = ENABLE_TEST_DASHBOARD_USER
   ? {
   mobile: String(import.meta.env.VITE_TEST_USER_MOBILE || '9000000000'),

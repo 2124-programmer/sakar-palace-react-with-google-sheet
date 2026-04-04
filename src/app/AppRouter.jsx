@@ -8,7 +8,7 @@ import NoticeBoardPage from '../pages/NoticeBoardPage';
 import LoginPage from '../pages/LoginPage';
 import { useAuth } from '../hooks/useAuth';
 
-const AUTH_DISABLED_FOR_TESTING = true;
+const AUTH_DISABLED_FOR_TESTING = false;
 
 function ProtectedLayout() {
   const { loading, isAuthenticated } = useAuth();
