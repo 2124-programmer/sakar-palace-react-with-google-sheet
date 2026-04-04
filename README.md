@@ -189,7 +189,7 @@ Repository enforcement:
 
 - Enable branch protection for `main` in GitHub settings.
 - Turn on "Require a pull request before merging".
-- Turn on "Require status checks to pass before merging" and select CI Build.
+- Turn on "Require status checks to pass before merging" and select CI Build (pull request).
 - Optional: require at least 1 approval.
 
 ## Important Notes
