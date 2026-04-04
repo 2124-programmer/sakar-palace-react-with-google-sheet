@@ -169,10 +169,13 @@ export function AuthProvider({ children }) {
       role: session?.role || 'viewer',
       isAdmin: session?.role === 'admin',
       isDashboardOnlyUser: session?.accessScope === 'dashboard-only',
-      testCredentials: {
-        mobile: TEST_DASHBOARD_USER.mobile,
-        code: TEST_DASHBOARD_USER.code
-      },
+      isTestUserEnabled: ENABLE_TEST_DASHBOARD_USER,
+      testCredentials: ENABLE_TEST_DASHBOARD_USER
+        ? {
+            mobile: TEST_DASHBOARD_USER.mobile,
+            code: TEST_DASHBOARD_USER.code
+          }
+        : null,
       user: session?.user || null,
       login,
       logout
