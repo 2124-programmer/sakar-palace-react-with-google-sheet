@@ -159,6 +159,39 @@ npm.cmd run build
 npm.cmd run preview
 ```
 
+## Branch Policy (Main Protection)
+
+Do not commit or merge code directly into `main`.
+
+Required process for every new development:
+
+1. Create a feature branch from latest `main`.
+2. Implement and test changes on the feature branch.
+3. Ensure build is successful with `npm.cmd run build`.
+4. Raise a Pull Request (PR) from feature branch to `main`.
+5. Merge only through PR after checks pass.
+
+Example commands:
+
+```powershell
+git checkout main
+git pull origin main
+git checkout -b feature/your-change-name
+
+# after development
+npm.cmd run build
+git add .
+git commit -m "feat: your change summary"
+git push -u origin feature/your-change-name
+```
+
+Repository enforcement:
+
+- Enable branch protection for `main` in GitHub settings.
+- Turn on "Require a pull request before merging".
+- Turn on "Require status checks to pass before merging" and select CI Build.
+- Optional: require at least 1 approval.
+
 ## Important Notes
 
 - Authentication is frontend-only and session data is stored in browser localStorage.
@@ -168,3 +201,7 @@ npm.cmd run preview
 ## License
 
 Private project for Sakar Palace society operations.
+
+## Contribution Process
+
+Please follow the team process in [CONTRIBUTING.md](CONTRIBUTING.md) before creating or merging any PR.
