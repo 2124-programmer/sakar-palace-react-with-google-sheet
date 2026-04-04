@@ -3,14 +3,24 @@ import { members as fallbackMembers } from '../data/societyData';
 import { fetchMembersFromSheets, hasSheetConfig } from '../services/sheetDataService';
 
 const AUTH_SESSION_STORAGE_KEY = 'sakar-auth-session-v1';
-const TEST_DASHBOARD_USER = {
-  mobile: '9000000000',
-  code: '111111',
-  residentName: 'Dashboard Test User',
-  flatNo: '',
-  role: 'viewer',
-  accessScope: 'dashboard-only'
-};
+const ENABLE_TEST_DASHBOARD_USER = import.meta.env.DEV || import.meta.env.VITE_ENABLE_TEST_USER === 'true';
+const TEST_DASHBOARD_USER = ENABLE_TEST_DASHBOARD_USER
+  ? {
+      mobile: '9000000000',
+      code: '111111',
+      residentName: 'Dashboard Test User',
+      flatNo: '',
+      role: 'viewer',
+      accessScope: 'dashboard-only'
+    }
+  : {
+      mobile: '__disabled__',
+      code: '__disabled__',
+      residentName: 'Dashboard Test User',
+      flatNo: '',
+      role: 'viewer',
+      accessScope: 'dashboard-only'
+    };
 
 const AuthContext = createContext(null);
 
