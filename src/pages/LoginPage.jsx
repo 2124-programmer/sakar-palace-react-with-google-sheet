@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 function LoginPage() {
-  const { isAuthenticated, loading, login, testCredentials, isTestUserEnabled } = useAuth();
+  const { isAuthenticated, loading, login, testCredentials, isTestUserEnabled, authSource, authWarning } = useAuth();
   const [mobile, setMobile] = useState('');
   const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -37,6 +37,10 @@ function LoginPage() {
         <div className={`auth-test-user-note${isTestUserEnabled ? '' : ' warning'}`}>
           Test User Status: {isTestUserEnabled ? 'Enabled' : 'Disabled'}
         </div>
+        <div className={`auth-test-user-note${authSource === 'sheets' ? '' : ' warning'}`}>
+          Login Source: {authSource === 'sheets' ? 'Google Sheets' : 'Fallback'}
+        </div>
+        {authWarning ? <div className="dashboard-note warning">{authWarning}</div> : null}
         {testCredentials ? (
           <div className="auth-test-user-note">
             Dashboard Test User: {testCredentials.mobile} / {testCredentials.code}
