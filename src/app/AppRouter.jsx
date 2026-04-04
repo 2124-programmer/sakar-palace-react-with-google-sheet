@@ -23,15 +23,17 @@ function ProtectedLayout() {
 }
 
 function AppRouter() {
+  const { isDashboardOnlyUser } = useAuth();
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedLayout />}>
         <Route path="/" element={<DashboardPage />} />
-        <Route path="/members" element={<MembersPage />} />
-        <Route path="/maintenance" element={<MaintenancePage />} />
-        <Route path="/expenses" element={<ExpensesPage />} />
-        <Route path="/notice-board" element={<NoticeBoardPage />} />
+        <Route path="/members" element={isDashboardOnlyUser ? <Navigate to="/" replace /> : <MembersPage />} />
+        <Route path="/maintenance" element={isDashboardOnlyUser ? <Navigate to="/" replace /> : <MaintenancePage />} />
+        <Route path="/expenses" element={isDashboardOnlyUser ? <Navigate to="/" replace /> : <ExpensesPage />} />
+        <Route path="/notice-board" element={isDashboardOnlyUser ? <Navigate to="/" replace /> : <NoticeBoardPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

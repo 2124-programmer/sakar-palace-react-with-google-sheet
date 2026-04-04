@@ -13,7 +13,8 @@ const navItems = [
 
 function MainLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user, role, logout } = useAuth();
+  const { user, role, logout, isDashboardOnlyUser } = useAuth();
+  const visibleNavItems = isDashboardOnlyUser ? navItems.filter((item) => item.to === '/') : navItems;
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -39,7 +40,7 @@ function MainLayout() {
           </NavLink>
 
           <nav className={`topnav-links${menuOpen ? ' open' : ''}`} aria-label="Main navigation">
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -53,7 +54,9 @@ function MainLayout() {
           </nav>
 
           <label className="topnav-role-switch" aria-label="Application role">
-            <span>{role === 'admin' ? 'Admin' : 'Viewer'}</span>
+            <span>
+              {isDashboardOnlyUser ? 'Test Viewer' : role === 'admin' ? 'Admin' : 'Viewer'}
+            </span>
             <span>{user?.residentName || 'Member'}</span>
             <button className="btn btn-xs btn-secondary" type="button" onClick={logout}>Logout</button>
           </label>

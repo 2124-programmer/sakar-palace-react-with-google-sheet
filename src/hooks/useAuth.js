@@ -3,6 +3,24 @@ import { members as fallbackMembers } from '../data/societyData';
 import { fetchMembersFromSheets, hasSheetConfig } from '../services/sheetDataService';
 
 const AUTH_SESSION_STORAGE_KEY = 'sakar-auth-session-v1';
+const ENABLE_TEST_DASHBOARD_USER = String(import.meta.env.VITE_ENABLE_TEST_USER || '').trim().toLowerCase() !== 'false';
+const TEST_DASHBOARD_USER = ENABLE_TEST_DASHBOARD_USER
+  ? {
+  mobile: String(import.meta.env.VITE_TEST_USER_MOBILE || '9000000000'),
+  code: String(import.meta.env.VITE_TEST_USER_CODE || '111111'),
+      residentName: 'Dashboard Test User',
+      flatNo: '',
+      role: 'viewer',
+      accessScope: 'dashboard-only'
+    }
+  : {
+      mobile: '__disabled__',
+      code: '__disabled__',
+      residentName: 'Dashboard Test User',
+      flatNo: '',
+      role: 'viewer',
+      accessScope: 'dashboard-only'
+    };
 
 const AuthContext = createContext(null);
 
@@ -12,6 +30,17 @@ const normalizeMobile = (value) => {
   return digits.length > 10 ? digits.slice(-10) : digits;
 };
 const normalizeCode = (value) => normalizeDigits(value);
+
+const createSession = ({ role, residentName, flatNo, mobile, accessScope = 'full' }) => ({
+  isAuthenticated: true,
+  role,
+  accessScope,
+  user: {
+    residentName,
+    flatNo,
+    mobile
+  }
+});
 
 const toRole = (member) => {
   const accessRole = String(member?.accessRole || '').trim().toLowerCase();
@@ -75,6 +104,26 @@ export function AuthProvider({ children }) {
   const login = async ({ mobile, code }) => {
     const normalizedMobile = normalizeMobile(mobile);
     const normalizedCode = normalizeCode(code);
+    const testUserMobile = normalizeMobile(TEST_DASHBOARD_USER.mobile);
+    const testUserCode = normalizeCode(TEST_DASHBOARD_USER.code);
+
+    if (
+      ENABLE_TEST_DASHBOARD_USER &&
+      normalizedMobile === testUserMobile &&
+      normalizedCode === testUserCode
+    ) {
+      const testUserSession = createSession({
+        role: TEST_DASHBOARD_USER.role,
+        residentName: TEST_DASHBOARD_USER.residentName,
+        flatNo: TEST_DASHBOARD_USER.flatNo,
+        mobile: testUserMobile,
+        accessScope: TEST_DASHBOARD_USER.accessScope
+      });
+
+      setSession(testUserSession);
+      persistSession(testUserSession);
+      return { success: true };
+    }
 
     if (normalizedMobile.length < 10) {
       return { success: false, message: 'Enter valid mobile number.' };
@@ -98,15 +147,13 @@ export function AuthProvider({ children }) {
       return { success: false, message: 'Invalid mobile or 6-digit code.' };
     }
 
-    const nextSession = {
-      isAuthenticated: true,
+    const nextSession = createSession({
       role: toRole(member),
-      user: {
-        residentName: member.residentName || member.name || 'Member',
-        flatNo: member.flatNo || '',
-        mobile: normalizeMobile(member.contact || member.phone || member.mobile)
-      }
-    };
+      residentName: member.residentName || member.name || 'Member',
+      flatNo: member.flatNo || '',
+      mobile: normalizeMobile(member.contact || member.phone || member.mobile),
+      accessScope: 'full'
+    });
 
     setSession(nextSession);
     persistSession(nextSession);
@@ -124,6 +171,14 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(session?.isAuthenticated),
       role: session?.role || 'viewer',
       isAdmin: session?.role === 'admin',
+      isDashboardOnlyUser: session?.accessScope === 'dashboard-only',
+      isTestUserEnabled: ENABLE_TEST_DASHBOARD_USER,
+      testCredentials: ENABLE_TEST_DASHBOARD_USER
+        ? {
+            mobile: TEST_DASHBOARD_USER.mobile,
+            code: TEST_DASHBOARD_USER.code
+          }
+        : null,
       user: session?.user || null,
       login,
       logout

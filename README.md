@@ -159,6 +159,27 @@ npm.cmd run build
 npm.cmd run preview
 ```
 
+## Netlify Deployment Rule
+
+This project is configured to deploy only from `main`.
+
+Repo-level behavior:
+
+- [netlify.toml](netlify.toml) includes a Netlify `ignore` rule.
+- Any branch other than `main` is skipped during Netlify build.
+
+Required Netlify site settings:
+
+1. Set Production branch to `main`.
+2. Disable Deploy Previews if you do not want PR preview deploys.
+3. Disable Branch Deploys for non-main branches.
+
+Result:
+
+- feature branches do not publish
+- PR branches do not publish
+- only code merged into `main` gets deployed
+
 ## Branch Policy (Main Protection)
 
 Do not commit or merge code directly into `main`.
