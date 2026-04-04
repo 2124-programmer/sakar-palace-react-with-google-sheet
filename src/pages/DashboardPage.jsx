@@ -27,7 +27,10 @@ function DashboardPage() {
     return <div className="dashboard-feedback">Loading home dashboard from Google Sheets...</div>;
   }
 
-  const complaintCount = data.complaints.length;
+  const complaints = data?.complaints || [];
+  const emergencyContacts = data?.emergencyContacts || [];
+  const announcements = data?.announcements || [];
+  const complaintCount = complaints.length;
   const stats = data.stats || {};
   const pendingMembersList = data.maintenanceSummary?.pendingMembersList || [];
 
@@ -143,7 +146,7 @@ function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.emergencyContacts.map((item) => (
+                {emergencyContacts.map((item) => (
                   <tr key={item.id}>
                     <td>{item.role}</td>
                     <td>{item.title || '-'}</td>
@@ -161,7 +164,7 @@ function DashboardPage() {
             <span className="dashboard-chip">{complaintCount} Active</span>
           </div>
           <ul className="complaint-list">
-            {data.complaints.slice(0, 3).map((complaint) => (
+            {complaints.slice(0, 3).map((complaint) => (
               <li key={complaint.id}>
                 <span>{complaint.title}</span>
                 <span className={`status-pill ${getStatusClass(complaint.status)}`}>
@@ -176,7 +179,7 @@ function DashboardPage() {
         </article>
       </section>
 
-      {data.announcements.length > 0 ? (
+      {announcements.length > 0 ? (
         <section className="home-card announcement-strip">
           <div className="card-header-inline">
             <h3>Latest Announcements</h3>
@@ -185,7 +188,7 @@ function DashboardPage() {
             </Link>
           </div>
           <ul className="home-list announcement-list">
-            {data.announcements.slice(0, 3).map((announcement) => (
+            {announcements.slice(0, 3).map((announcement) => (
               <li key={announcement.id}>
                 <p className="list-title">{announcement.title}</p>
                 <small>{formatDate(announcement.date)}</small>

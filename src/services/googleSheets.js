@@ -147,6 +147,12 @@ const fallbackDashboardData = {
     { id: 'ann-1', title: 'Water Supply Maintenance Tonight', date: '2026-03-25', message: '' },
     { id: 'ann-2', title: 'Society Meeting on Sunday', date: '2026-03-20', message: '' }
   ],
+  events: [],
+  emergencyContacts: [
+    { id: 'cnt-1', role: 'Security', title: 'Gate Security', contact: '-' },
+    { id: 'cnt-2', role: 'Plumber', title: 'On-call Plumber', contact: '-' }
+  ],
+  complaints: [],
   maintenanceSummary: {
     pendingMembersList: []
   }
