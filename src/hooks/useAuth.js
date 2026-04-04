@@ -7,6 +7,11 @@ const AUTH_SESSION_STORAGE_KEY = 'sakar-auth-session-v1';
 const AuthContext = createContext(null);
 
 const normalizeDigits = (value) => String(value || '').replace(/\D/g, '');
+const normalizeMobile = (value) => {
+  const digits = normalizeDigits(value);
+  return digits.length > 10 ? digits.slice(-10) : digits;
+};
+const normalizeCode = (value) => normalizeDigits(value);
 
 const toRole = (member) => {
   const accessRole = String(member?.accessRole || '').trim().toLowerCase();
@@ -68,8 +73,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async ({ mobile, code }) => {
-    const normalizedMobile = normalizeDigits(mobile);
-    const normalizedCode = String(code || '').trim();
+    const normalizedMobile = normalizeMobile(mobile);
+    const normalizedCode = normalizeCode(code);
 
     if (normalizedMobile.length < 10) {
       return { success: false, message: 'Enter valid mobile number.' };
@@ -82,9 +87,11 @@ export function AuthProvider({ children }) {
     const members = await loadMembersForAuth();
 
     const member = members.find((item) => {
-      const memberMobile = normalizeDigits(item?.contact || item?.phone || item?.mobile);
-      const memberCode = String(item?.loginCode || item?.code || item?.pin || '').trim();
-      return memberMobile === normalizedMobile && memberCode === normalizedCode;
+      const memberMobile = normalizeMobile(item?.contact || item?.phone || item?.mobile);
+      const memberCode = normalizeCode(item?.loginCode || item?.code || item?.pin || item?.passcode);
+      const memberCodePadded = memberCode ? memberCode.padStart(6, '0') : '';
+
+      return memberMobile === normalizedMobile && (memberCode === normalizedCode || memberCodePadded === normalizedCode);
     });
 
     if (!member) {
@@ -97,7 +104,7 @@ export function AuthProvider({ children }) {
       user: {
         residentName: member.residentName || member.name || 'Member',
         flatNo: member.flatNo || '',
-        mobile: normalizeDigits(member.contact || member.phone || member.mobile)
+        mobile: normalizeMobile(member.contact || member.phone || member.mobile)
       }
     };
 
