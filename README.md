@@ -1,283 +1,170 @@
 # Sakar Palace Society Portal
 
-A modern, responsive web portal for **Sakar Palace B** housing society. Built with React + Vite, it reads live data directly from Google Sheets — no backend server required. Society administrators update a spreadsheet, and the portal reflects changes automatically.
-
----
-
-## Table of Contents
-
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Pages](#pages)
-- [Google Sheets Integration](#google-sheets-integration)
-- [Environment Variables](#environment-variables)
-- [Getting Started](#getting-started)
-- [Build & Deployment](#build--deployment)
-- [Data Model](#data-model)
-- [Fallback Behavior](#fallback-behavior)
-
----
+A responsive housing society web portal built with React and Vite.
+The app reads operational data from Google Sheets and uses frontend-only login for member access.
 
 ## Features
 
-- **Live Google Sheets sync** — data is fetched from your society's spreadsheet on every page load
-- **Members directory** — searchable list of all flat owners/tenants with occupancy filter
-- **Maintenance tracker** — month-wise payment status for every flat with summary KPIs (collected, required, pending, advanced)
-- **Expenses log** — society expense records with category-level breakdown
-- **Dashboard** — society stats, announcements, upcoming events, emergency contacts, and complaints
-- **Notice board** — publish notices visible to all members
-- **No backend required** — runs entirely in the browser; Google Sheets acts as the database
-- **Public URL fallback** — works even without a Google API key using the public GViz endpoint
-- **Fully responsive** — works on desktop, tablet, and mobile
-
----
+- Login with mobile number + 6-digit code
+- Role-based access: admin and viewer
+- Admin-only Maintenance Admin View
+- Individual Maintenance View for all users
+- Dashboard cards and tables from dedicated dashboard sheets
+- Members directory with search and occupancy filters
+- Expenses ledger with month/category filters, status tracking, and admin CRUD UI
+- Notice board view
+- Fallback sample data for pages that support fallback mode
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| UI Framework | React 18 |
-| Build Tool | Vite 8 |
-| Routing | React Router v6 |
-| Data Source | Google Sheets API v4 / GViz public endpoint |
-| Styling | Plain CSS (custom, no framework) |
-| State Management | React hooks (`useState`, `useMemo`, `useEffect`) |
+- React 18
+- Vite 8
+- React Router v6
+- Google Sheets API v4
+- Plain CSS
 
----
+## Routes
+
+- /login -> Login screen
+- / -> Dashboard
+- /members -> Members list
+- /maintenance -> Maintenance tracking
+- /expenses -> Expenses ledger
+- /notice-board -> Notices
+
+All app routes except /login are protected by login session.
+
+## Role Behavior
+
+- Admin:
+  - Can switch Maintenance page to Admin View
+  - Can perform Add, Edit, Delete, and status changes in Expenses page
+- Viewer:
+  - Can access only Individual View in Maintenance page
+  - Can view expenses data but cannot perform admin actions
 
 ## Project Structure
 
-```
+```text
 sakar-palace-react/
-├── index.html                  # App entry HTML
-├── vite.config.js              # Vite configuration
-├── .env                        # Environment variables (NOT committed)
-├── .env.example                # Template for environment variables
-├── src/
-│   ├── main.jsx                # React app bootstrap
-│   ├── App.jsx                 # Root component
-│   ├── styles.css              # Global + page-specific styles
-│   ├── app/
-│   │   └── AppRouter.jsx       # All route definitions
-│   ├── pages/
-│   │   ├── DashboardPage.jsx   # Society overview & stats
-│   │   ├── MembersPage.jsx     # Flat member directory
-│   │   ├── MaintenancePage.jsx # Monthly maintenance payments
-│   │   ├── ExpensesPage.jsx    # Society expense records
-│   │   └── NoticeBoardPage.jsx # Society notices
-│   ├── layouts/
-│   │   └── MainLayout.jsx      # Shared sidebar/header shell
-│   ├── hooks/
-│   │   ├── useMembers.js       # Fetch + state for members data
-│   │   ├── useMaintenance.js   # Fetch + state for maintenance data
-│   │   ├── useExpenses.js      # Fetch + state for expenses data
-│   │   └── useDashboardData.js # Fetch + state for dashboard data
-│   ├── services/
-│   │   ├── sheetDataService.js # Members, Maintenance, Expenses fetch & parse
-│   │   └── googleSheets.js     # Dashboard-specific data fetch & parse
-│   ├── data/
-│   │   └── societyData.js      # Static fallback data & society metadata
-│   ├── components/
-│   │   └── common/             # Shared UI components
-│   └── utils/                  # Utility/helper functions
+|-- src/
+|   |-- app/
+|   |   |-- AppRouter.jsx
+|   |-- hooks/
+|   |   |-- useAuth.js
+|   |   |-- useAppRole.js
+|   |   |-- useDashboardData.js
+|   |   |-- useExpenses.js
+|   |   |-- useMaintenance.js
+|   |   |-- useMembers.js
+|   |-- layouts/
+|   |   |-- MainLayout.jsx
+|   |-- pages/
+|   |   |-- LoginPage.jsx
+|   |   |-- DashboardPage.jsx
+|   |   |-- MembersPage.jsx
+|   |   |-- MaintenancePage.jsx
+|   |   |-- ExpensesPage.jsx
+|   |   |-- NoticeBoardPage.jsx
+|   |-- services/
+|   |   |-- googleSheets.js
+|   |   |-- sheetDataService.js
+|   |-- data/
+|   |   |-- societyData.js
+|   |-- components/
+|   |   |-- common/
+|   |-- styles.css
+|   |-- main.jsx
+|-- .env.example
+|-- vite.config.js
 ```
 
----
+## Google Sheets Setup
 
-## Pages
+Use one spreadsheet with these tabs:
 
-### Dashboard (`/`)
-- Society name, total flats
-- Announcements, upcoming events
-- Emergency contacts
-- Complaints log
-- Maintenance summary overview
+- Members
+- MaintenancePaid
+- Expenses Details
+- Dashboard-Stats
+- latest-announcements
+- emergency-contacts
+- Complaints
 
-### Members (`/members`)
-- Full flat-wise resident directory
-- Search by name, flat number, or wing
-- Filter by occupancy type (Owner / Tenant / Vacant)
-- Shows: Flat No, Wing, Resident Name, Type, Contact, Family Members
+### Members columns (for directory + login)
 
-### Maintenance (`/maintenance`)
-- Monthly payment tracking for all flats (Jan–Dec)
-- **Month filter** — view a single month or all months at once
-- **Search** by flat number or resident name
-- **Summary cards**: Total Flats, Amount Collected, Amount Required, Pending/Advanced
-- **Monthly overview table**: Total Received / Required / Pending / Advanced Jama per month
-- **Per-flat table**: Flat No, Resident, Selected Month Amount, Advanced Jama, Annual Total
+Required or supported aliases:
 
-### Expenses (`/expenses`)
-- Society expense records fetched from the `Expenses Details` sheet
-- Categorized expense view
-
-### Notice Board (`/notice-board`)
-- Society notices and circulars
-
----
-
-## Google Sheets Integration
-
-The app reads from three sheets inside a single Google Spreadsheet:
-
-| Sheet Name | Used By | Description |
-|-----------|---------|-------------|
-| `Members` | Members page | Flat-wise resident details |
-| `MaintenancePaid` | Maintenance page | Monthly payment amounts per flat |
-| `Expenses Details` | Expenses page | Itemized society expenses |
-
-### How It Works
-
-1. On page load, each custom hook (`useMembers`, `useMaintenance`, etc.) calls the corresponding service function.
-2. If `VITE_GOOGLE_SHEETS_API_KEY` is set, the app uses the **Google Sheets API v4** (authenticated, higher quota).
-3. If only `VITE_GOOGLE_SHEET_ID` is set (no API key), the app falls back to the **public GViz endpoint** (`/gviz/tq?sheet=...`) — no credentials needed, but the spreadsheet must be shared publicly.
-4. Header rows are auto-detected — the parser scans up to the first 12 rows to locate the header by matching known column name aliases.
-
-### Expected Sheet Columns
-
-**Members sheet** — order-flexible, matched by column name:
-- Wing / Tower
+- Wing or Tower
 - Flat No
-- Owner / Tenant (or Resident / Name)
+- Owner / Tenant or Resident or Name
 - Occupancy Type
-- Contact / Phone / Mobile
+- Contact or Phone or Mobile
+- Role or Access Role (set admin for admins)
+- Code or Pin or Login Code or Passcode (6-digit login code)
 - Family Members
 
-**MaintenancePaid sheet** — order-flexible, matched by column name:
+### MaintenancePaid columns
+
 - Flat No
 - Resident
-- Monthly columns named `Jan-26`, `Feb-26`, … `Dec-26`
+- Month columns like Jan-26 to Dec-26
 - Advanced Jama
-- Summary rows: `Total Received`, `Required`, `Pendings`, `Advanced Jama`
 
----
+Optional summary rows recognized by label:
+
+- Total Received
+- Required
+- Pendings
+- Advanced Jama
+- Amount/Head
+
+### Expenses Details supported formats
+
+1. Ledger format (recommended):
+   - Sr No, Month, Expense Name, Category, Amount, Pay To, Status, Paid Date
+2. Wide monthly format:
+   - Sr No, Expense Title, Jan-26..Dec-26, Total
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` and fill in your values.
+Create a .env file:
 
 ```env
-# Required — your Google Spreadsheet ID
-# Found in the sheet URL: https://docs.google.com/spreadsheets/d/<SHEET_ID>/edit
-VITE_GOOGLE_SHEET_ID=your_spreadsheet_id_here
-
-# Optional — enables authenticated API access (higher quota, private sheets)
-# Create at: https://console.cloud.google.com/ → APIs & Services → Credentials
-VITE_GOOGLE_SHEETS_API_KEY=your_api_key_here
+VITE_GOOGLE_SHEET_ID=your_spreadsheet_id
+VITE_GOOGLE_SHEETS_API_KEY=your_google_api_key
 ```
 
-> **Without an API key**: The spreadsheet must be shared as "Anyone with the link can view". The app will use the public GViz endpoint automatically.
+Notes:
 
-> **With an API key**: The spreadsheet can be private. Google Sheets API v4 must be enabled in your Google Cloud project.
+- Sheet ID is required across the app.
+- Dashboard and Expenses pages require API key based fetch in current implementation.
+- Members and Maintenance can fall back to public GViz when API key is missing, if sheet sharing allows it.
 
----
-
-## Getting Started
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) v18 or higher
-- A Google Spreadsheet with the data (see [Google Sheets Integration](#google-sheets-integration))
-
-### Installation
+## Run Locally
 
 ```powershell
-# Clone the repository
-git clone https://github.com/2124-programmer/sakar-palace-react-with-google-sheet.git
-cd sakar-palace-react-with-google-sheet
-
-# Install dependencies
 npm install
-
-# Set up environment variables
-copy .env.example .env
-# Edit .env and add your VITE_GOOGLE_SHEET_ID (and optionally API key)
-```
-
-### Run Development Server
-
-```powershell
 npm.cmd run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+Open http://localhost:5173
 
-> **Note (Windows):** Use `npm.cmd run dev` if `npm run dev` gives a PowerShell script execution policy error.
+If PowerShell blocks npm scripts, use npm.cmd commands.
 
----
-
-## Build & Deployment
+## Production Build
 
 ```powershell
-# Build for production
 npm.cmd run build
-
-# Preview the production build locally
 npm.cmd run preview
 ```
 
-The `dist/` folder contains the static output. Deploy it to any static hosting service:
+## Important Notes
 
-- **GitHub Pages** — push `dist/` to `gh-pages` branch
-- **Netlify / Vercel** — connect the repo and set build command to `npm run build`, output dir to `dist`
-- **Any web server** — copy `dist/` contents to the server's public folder
-
-> Remember to set your environment variables in the hosting platform's settings (not in the repo — the `.env` file is gitignored).
-
----
-
-## Data Model
-
-### Maintenance Data Shape (from `useMaintenance`)
-
-```js
-{
-  records: [
-    {
-      flatNo: "A-101",
-      resident: "John Doe",
-      months: { "jan-26": 1500, "feb-26": 1500, ... },
-      advancedJama: 0,
-      annualTotal: 18000
-    }
-  ],
-  months: ["jan-26", "feb-26", ...],   // all month columns found in sheet
-  summaries: {
-    totalReceived:    { "jan-26": 15000, "feb-26": 12000, ... },
-    required:         { "jan-26": 16000, ... },
-    pendings:         { "jan-26": 1000, ... },
-    advancedJamaByMonth: { "jan-26": 0, ... }
-  },
-  totals: {
-    advancedJamaMembers: 2
-  }
-}
-```
-
----
-
-## Fallback Behavior
-
-If Google Sheets cannot be reached (network error, wrong Sheet ID, permissions), the app:
-1. Logs the error to the browser console
-2. Falls back to the static data in `src/data/societyData.js`
-3. Shows a yellow warning banner on the affected page ("Using offline/fallback data")
-
-The rest of the UI remains fully functional with the fallback data.
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Commit your changes: `git commit -m "Add my feature"`
-4. Push to the branch: `git push origin feature/my-feature`
-5. Open a Pull Request
-
----
+- Authentication is frontend-only and session data is stored in browser localStorage.
+- Expenses admin operations are currently local (browser-persisted) and are not written back to Google Sheets.
+- Treat this project as an internal portal and avoid exposing sensitive credentials.
 
 ## License
 
-This project is private and intended for **Sakar Palace B** society management use only.
+Private project for Sakar Palace society operations.
