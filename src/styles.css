@@ -524,6 +524,12 @@ a {
   font-size: 0.9rem;
 }
 
+.auth-test-user-note.warning {
+  border-color: #f0d1a6;
+  background: #fff3e3;
+  color: #7f5218;
+}
+
 .auth-form {
   display: flex;
   flex-direction: column;
