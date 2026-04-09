@@ -127,17 +127,29 @@ function ExpensesPage() {
     [managedRecords, selectedCategory, selectedMonth]
   );
 
+  // For the overview table, totals must be computed from ALL months (category filter
+  // only) — not from filteredRows — so the full monthly breakdown is always visible.
+  const allMonthsCategoryFiltered = useMemo(
+    () =>
+      managedRecords.filter(
+        (record) => selectedCategory === 'all' || record.category === selectedCategory
+      ),
+    [managedRecords, selectedCategory]
+  );
+
   const monthlyTotals = useMemo(
     () =>
       monthOptions.reduce((accumulator, month) => {
-        accumulator[month] = filteredRows.reduce(
+        accumulator[month] = allMonthsCategoryFiltered.reduce(
           (total, record) => total + (record.month === month ? Number(record.amount || 0) : 0),
           0
         );
         return accumulator;
       }, {}),
-    [filteredRows, monthOptions]
+    [allMonthsCategoryFiltered, monthOptions]
   );
+
+  const overviewTotal = allMonthsCategoryFiltered.reduce((total, record) => total + Number(record.amount || 0), 0);
 
   const filteredTotal = filteredRows.reduce((total, record) => total + Number(record.amount || 0), 0);
   const paidCount = filteredRows.filter((record) => record.status === 'paid').length;
@@ -425,54 +437,13 @@ function ExpensesPage() {
                   {monthOptions.map((month) => (
                     <td key={`kharch-${month}`}>{formatCurrency(monthlyTotals[month] || 0)}</td>
                   ))}
-                  <td>{formatCurrency(filteredTotal)}</td>
+                  <td>{formatCurrency(overviewTotal)}</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </article>
 
-        <article className="panel maintenance-insight-panel">
-          <h3>{`Expense Title List (${selectedMonthHeader})`}</h3>
-          <div className="table-shell">
-            <table>
-              <thead>
-                <tr>
-                  <th>Sr No</th>
-                  <th>Month</th>
-                  <th>Title</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedMonthRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="empty-row">
-                      No records found.
-                    </td>
-                  </tr>
-                ) : (
-                  selectedMonthRows.map((row) => (
-                    <tr key={`expense-title-${row.id}`}>
-                      <td>{row.srNo}</td>
-                      <td>{row.month}</td>
-                      <td>{row.title}</td>
-                      <td>{formatCurrency(row.amount)}</td>
-                    </tr>
-                  ))
-                )}
-                <tr>
-                  <td colSpan={3}>
-                    <strong>Total</strong>
-                  </td>
-                  <td>
-                    <strong>{formatCurrency(selectedMonthTotal)}</strong>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </article>
       </section>
 
       {isAdmin && isFormModalOpen ? (

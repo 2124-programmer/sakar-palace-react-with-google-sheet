@@ -55,9 +55,9 @@ function MainLayout() {
 
           <label className="topnav-role-switch" aria-label="Application role">
             <span>
-              {isDashboardOnlyUser ? 'Test Viewer' : role === 'admin' ? 'Admin' : 'Viewer'}
+              {/* {isDashboardOnlyUser ? 'Test Viewer' : role === 'admin' ? 'Admin' : 'Viewer'} */}Hi, 
             </span>
-            <span>{user?.residentName || 'Member'}</span>
+            <span>{user?.residentName.split(" ")[0] || 'Member'}</span>
             <button className="btn btn-xs btn-secondary" type="button" onClick={logout}>Logout</button>
           </label>
         </div>

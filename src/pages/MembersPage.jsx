@@ -33,6 +33,7 @@ function MembersPage() {
     { key: 'flatNo', label: 'Flat No' },
     { key: 'residentName', label: 'Resident Name' },
     { key: 'occupancyType', label: 'Occupancy Type' },
+    { key: 'role', label: 'Role' },
     {
       key: 'contact',
       label: 'Contact',

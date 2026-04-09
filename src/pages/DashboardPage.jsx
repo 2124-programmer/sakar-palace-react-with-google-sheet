@@ -32,7 +32,11 @@ function DashboardPage() {
   const announcements = data?.announcements || [];
   const complaintCount = complaints.length;
   const stats = data.stats || {};
-  const pendingMembersList = data.maintenanceSummary?.pendingMembersList || [];
+  const maintenanceSummary = data.maintenanceSummary || {};
+  const pendingMembersList = maintenanceSummary.pendingMembersList || [];
+  const advancedMembersList = maintenanceSummary.advancedMembersList || [];
+  const totalPendingAmount = maintenanceSummary.totalPendingAmount || 0;
+  const totalAdvancedAmount = maintenanceSummary.totalAdvancedAmount || 0;
 
   const getStatusClass = (status) => {
     const key = String(status || '').trim().toLowerCase();
@@ -88,12 +92,12 @@ function DashboardPage() {
               <tbody>
                 
                 <tr>
-                  <td>Maintenance Per Head</td>
+                  <td>Maintenance/Head</td>
                   <td>{formatCurrency(stats.currentMonthMaintenancePerHead)}</td>
                 </tr>
                 <tr>
-                  <td>Paid Members</td>
-                  <td>{stats.maintenancePaidMembers}</td>
+                  <td>Maintainance paid by</td>
+                  <td>{stats.maintenancePaidMembers} Members</td>
                 </tr>
                 <tr>
                   <td>Pending Members</td>
@@ -104,38 +108,7 @@ function DashboardPage() {
           </div>
         </article>
         <article className="home-card dashboard-card compact-card">
-          <div className="card-header-inline">
-            <h3>Maintainance Pending List</h3>
-            <span className="dashboard-chip">{pendingMembersList.length}</span>
-          </div>
-          {pendingMembersList.length > 0 ? (
-            <div className="table-shell dashboard-table-shell">
-              <table className="dashboard-mini-table">
-                <thead>
-                  <tr>
-                    <th>Flat No</th>
-                    <th>Resident</th>
-                    <th>Pending Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pendingMembersList.slice(0, 6).map((member) => (
-                    <tr key={member.id}>
-                      <td>{member.flatNo}</td>
-                      <td>{member.resident}</td>
-                      <td>{formatCurrency(member.pendingAmount)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="dashboard-bottom-note">No pending members for the active month.</p>
-          )}
-        </article>
-
-        <article className="home-card dashboard-card compact-card">
-          <h3>Emergency Contacts</h3>
+          <h3>IMP Contacts</h3>
           <div className="table-shell dashboard-table-shell">
             <table className="dashboard-mini-table">
               <thead>
@@ -157,10 +130,86 @@ function DashboardPage() {
             </table>
           </div>
         </article>
+        <article className="home-card dashboard-card compact-card">
+          <div className="card-header-inline">
+            <div>
+              <h3>Maintainance Pending List</h3>
+              <small>{stats.activeMonth ? `Month: ${stats.activeMonth}` : 'Active month pending'}</small>
+            </div>
+            <span className="dashboard-chip">{pendingMembersList.length}</span>
+          </div>
+          {pendingMembersList.length > 0 ? (
+            <>
+              <div className="table-shell dashboard-table-shell">
+                <table className="dashboard-mini-table">
+                  <thead>
+                    <tr>
+                      <th>Flat No</th>
+                      <th>Resident</th>
+                      <th>Pending Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingMembersList.map((member) => (
+                      <tr key={member.id}>
+                        <td>{member.flatNo}</td>
+                        <td>{member.resident}</td>
+                        <td>{formatCurrency(member.pendingAmount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="dashboard-bottom-note">
+                Total pending amount: {formatCurrency(totalPendingAmount)}
+              </p>
+            </>
+          ) : (
+            <p className="dashboard-bottom-note">No pending members for the active month.</p>
+          )}
+        </article>
 
         <article className="home-card dashboard-card compact-card">
           <div className="card-header-inline">
-            <h3>Recent Complaints</h3>
+            <h3>Advanced Maintenance List</h3>
+            <span className="dashboard-chip">{advancedMembersList.length}</span>
+          </div>
+          {advancedMembersList.length > 0 ? (
+            <>
+              <div className="table-shell dashboard-table-shell">
+                <table className="dashboard-mini-table">
+                  <thead>
+                    <tr>
+                      <th>Flat No</th>
+                      <th>Resident</th>
+                      <th>Advanced Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {advancedMembersList.map((member) => (
+                      <tr key={member.id}>
+                        <td>{member.flatNo}</td>
+                        <td>{member.resident}</td>
+                        <td>{formatCurrency(member.advancedAmount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="dashboard-bottom-note">
+                Total advanced amount: {formatCurrency(totalAdvancedAmount)}
+              </p>
+            </>
+          ) : (
+            <p className="dashboard-bottom-note">No advanced payments captured yet.</p>
+          )}
+        </article>
+
+        
+
+        <article className="home-card dashboard-card compact-card">
+          <div className="card-header-inline">
+            <h3>Recent Complaints</h3> ( for now its Dummy Data, will integrate with live data soon )
             <span className="dashboard-chip">{complaintCount} Active</span>
           </div>
           <ul className="complaint-list">

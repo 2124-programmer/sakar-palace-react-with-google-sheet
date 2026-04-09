@@ -85,48 +85,45 @@ const mapComplaints = (rows) =>
     status: findValue(row, ['status', 'state'], 'Open')
   }));
 
-const mapMaintenanceSummary = (rows, stats) => {
-  const activeMonth = String(stats?.activeMonth || '').trim();
-  const normalizedActiveMonth = normalize(activeMonth);
-  const monthKey = Object.keys(rows[0] || {}).find((key) => normalize(key) === normalizedActiveMonth);
-
-  const amountHeadRow = rows.find((row) =>
-    Object.values(row || {}).some((value) =>
-      ['amount/head', 'ammount/head', 'maintenance/head', 'per head'].includes(normalize(value))
-    )
-  );
-
-  const perHeadAmount = monthKey
-    ? parseNumber(amountHeadRow?.[monthKey]) || parseNumber(stats?.currentMonthMaintenancePerHead)
-    : parseNumber(stats?.currentMonthMaintenancePerHead);
-
+const mapMaintenanceSummary = (rows) => {
   const records = rows.filter((row) => {
     const flatNo = findValue(row, ['flat no', 'flatno', 'flat no.']);
     const resident = findValue(row, ['resident', 'owner', 'name']);
     return flatNo && resident;
   });
 
-  const pendingMembersList = monthKey
-    ? records
-        .map((row) => {
-          const paidAmount = parseNumber(row[monthKey]);
-          const resident = findValue(row, ['resident', 'owner', 'name']);
-          const flatNo = findValue(row, ['flat no', 'flatno', 'flat no.']);
-          const pendingAmount = Math.max(perHeadAmount - paidAmount, 0);
+  // Column P (Advanced Jama) is already the cumulative net balance across ALL months.
+  // It already incorporates any shortfall from the active month, so no per-month
+  // re-adjustment is needed. A positive value = net advance; negative = net pending.
+  const memberStats = records.map((row) => {
+    const flatNo = findValue(row, ['flat no', 'flatno', 'flat no.']);
+    const resident = findValue(row, ['resident', 'owner', 'name']);
+    const advancedJama = parseNumber(findValue(row, ['advanced jama', 'advantage jama'], '0'));
+    return { id: row.id, flatNo, resident, advancedJama };
+  });
 
-          return {
-            id: row.id,
-            flatNo,
-            resident,
-            pendingAmount,
-            paidAmount
-          };
-        })
-        .filter((item) => item.pendingAmount > 0)
-    : [];
+  const pendingMembersList = memberStats
+    .filter((item) => item.advancedJama < 0)
+    .map(({ id, flatNo, resident, advancedJama }) => ({
+      id, flatNo, resident, pendingAmount: Math.abs(advancedJama)
+    }));
+
+  const advancedMembersList = memberStats
+    .filter((item) => item.advancedJama > 0)
+    .map(({ id, flatNo, resident, advancedJama }) => ({
+      id, flatNo, resident, advancedAmount: advancedJama
+    }));
+
+  const totalPendingAmount = pendingMembersList.reduce((total, item) => total + item.pendingAmount, 0);
+  const totalAdvancedAmount = advancedMembersList.reduce((total, item) => total + item.advancedAmount, 0);
 
   return {
-    pendingMembersList
+    pendingMembersList,
+    advancedMembersList,
+    totalPendingAmount,
+    totalAdvancedAmount,
+    totalMemberCount: records.length,
+    pendingMemberCount: pendingMembersList.length
   };
 };
 
@@ -154,7 +151,10 @@ const fallbackDashboardData = {
   ],
   complaints: [],
   maintenanceSummary: {
-    pendingMembersList: []
+    pendingMembersList: [],
+    advancedMembersList: [],
+    totalPendingAmount: 0,
+    totalAdvancedAmount: 0
   }
 };
 
@@ -198,13 +198,24 @@ export async function fetchDashboardFromSheets(customRanges = {}) {
   const mapped = Object.fromEntries(entries);
   console.log('[googleSheets] Mapping dashboard payload to UI model');
 
+  const maintenanceSummary = mapMaintenanceSummary(mapped.maintenance || []);
+  const baseStats = mapStats(mapped.stats || []);
+
+  // Override pending/paid counts from the computed maintenance data so the
+  // Current Month Details card always matches the Pending List card.
+  const stats = {
+    ...baseStats,
+    pendingMembers: maintenanceSummary.pendingMemberCount,
+    maintenancePaidMembers: maintenanceSummary.totalMemberCount - maintenanceSummary.pendingMemberCount
+  };
+
   const result = {
-    stats: mapStats(mapped.stats || []),
+    stats,
     announcements: mapAnnouncements(mapped.announcements || []),
     events: [],
     emergencyContacts: mapEmergencyContacts(mapped.emergencyContacts || []),
     complaints: mapComplaints(mapped.complaints || []),
-    maintenanceSummary: mapMaintenanceSummary(mapped.maintenance || [], mapStats(mapped.stats || []))
+    maintenanceSummary
   };
 
   console.log('[googleSheets] fetchDashboardFromSheets: success', {

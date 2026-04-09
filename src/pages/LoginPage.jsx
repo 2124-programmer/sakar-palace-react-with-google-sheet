@@ -32,14 +32,8 @@ function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1>Society Portal Login</h1>
-        <p>Login using your registered mobile number and 6-digit code.</p>
-        <div className={`auth-test-user-note${isTestUserEnabled ? '' : ' warning'}`}>
-          Test User Status: {isTestUserEnabled ? 'Enabled' : 'Disabled'}
-        </div>
-        <div className={`auth-test-user-note${authSource === 'sheets' ? '' : ' warning'}`}>
-          Login Source: {authSource === 'sheets' ? 'Google Sheets' : 'Fallback'}
-        </div>
+        <h1>Sakar Palace Login</h1>
+        <p>Login with mobile number and 6-digit code.</p>
         {authWarning ? <div className="dashboard-note warning">{authWarning}</div> : null}
         {testCredentials ? (
           <div className="auth-test-user-note">
