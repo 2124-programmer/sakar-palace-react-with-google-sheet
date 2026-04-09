@@ -481,6 +481,68 @@ a {
   min-height: auto;
 }
 
+/* WhatsApp Notification Section */
+.whatsapp-notify-section {
+  min-height: auto;
+}
+
+.whatsapp-notify-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.whatsapp-notify-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #f4fdf6;
+  border: 1px solid #c3e6cb;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.whatsapp-notify-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+.whatsapp-notify-body {
+  flex: 1;
+}
+
+.whatsapp-notify-body strong {
+  display: block;
+  font-size: 0.95rem;
+  color: #1a3a2a;
+  margin-bottom: 3px;
+}
+
+.whatsapp-notify-body p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #4a6a55;
+}
+
+.whatsapp-btn {
+  flex-shrink: 0;
+  background: #25d366;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.whatsapp-btn:hover {
+  background: #1ebe5a;
+}
+
 .dashboard-feedback {
   background: #fff;
   border: 1px solid #d6e0ec;

@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useAppRole } from '../hooks/useAppRole';
+import { useExpenses } from '../hooks/useExpenses';
 import { formatCurrency, formatDate } from '../utils/formatters';
 
 const statusClassByValue = {
@@ -11,6 +13,8 @@ const statusClassByValue = {
 
 function DashboardPage() {
   const { loading, error, isUsingFallback, data } = useDashboardData();
+  const { isAdmin } = useAppRole();
+  const { data: expenseData } = useExpenses();
 
   useEffect(() => {
     console.log('[DashboardPage] render state', {
@@ -41,6 +45,62 @@ function DashboardPage() {
   const getStatusClass = (status) => {
     const key = String(status || '').trim().toLowerCase();
     return statusClassByValue[key] || 'status-open';
+  };
+
+  // Compute current-month expense total from expenses hook
+  const activeMonthLabel = String(stats.activeMonth || '').split('-')[0]; // "Mar-26" → "Mar"
+  const expenseRecords = expenseData?.records || [];
+  const currentMonthExpenseTotal = expenseRecords
+    .filter((r) => r.month === activeMonthLabel)
+    .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+
+  const buildWhatsAppUrl = (message) =>
+    `https://wa.me/?text=${encodeURIComponent(message)}`;
+
+  const sendMaintenanceReminder = () => {
+    const month = stats.activeMonth || '-';
+    const perHead = formatCurrency(stats.currentMonthMaintenancePerHead);
+    const msg =
+      `🏠 *Sakar Palace B – Maintenance Reminder*\n` +
+      `📅 Month: ${month}\n\n` +
+      `Dear Residents,\n` +
+      `Please pay your maintenance for *${month}*.\n\n` +
+      `💰 Amount per Head: *${perHead}*\n\n` +
+      `Kindly pay at the earliest.\n` +
+      `Thank you! 🙏`;
+    window.open(buildWhatsAppUrl(msg), '_blank', 'noopener,noreferrer');
+  };
+
+  const sendPendingMembersMessage = () => {
+    const month = stats.activeMonth || '-';
+    const lines = pendingMembersList.map(
+      (m) => `• ${m.flatNo} | ${m.resident} | ${formatCurrency(m.pendingAmount)}`
+    );
+    const msg =
+      `🏠 *Sakar Palace B – Pending Maintenance*\n` +
+      `📅 Month: ${month}\n\n` +
+      (lines.length > 0
+        ? `Following members have pending dues:\n${lines.join('\n')}\n\n` +
+          `💰 Total Pending: *${formatCurrency(totalPendingAmount)}*`
+        : `✅ All members have paid for ${month}.`) +
+      `\n\nPlease clear dues at the earliest. 🙏`;
+    window.open(buildWhatsAppUrl(msg), '_blank', 'noopener,noreferrer');
+  };
+
+  const sendExpensesSummary = () => {
+    const month = stats.activeMonth || '-';
+    const total = formatCurrency(currentMonthExpenseTotal);
+    const lines = expenseRecords
+      .filter((r) => r.month === activeMonthLabel)
+      .map((r) => `• ${r.title} – ${formatCurrency(r.amount)}`);
+    const msg =
+      `🏠 *Sakar Palace B – Expense Summary*\n` +
+      `📅 Month: ${month}\n\n` +
+      (lines.length > 0
+        ? `Expenses for *${month}*:\n${lines.join('\n')}\n\n`
+        : `No expenses recorded for ${month}.\n\n`) +
+      `💰 Total: *${total}*\n\nThank you! 🙏`;
+    window.open(buildWhatsAppUrl(msg), '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -244,6 +304,68 @@ function DashboardPage() {
               </li>
             ))}
           </ul>
+        </section>
+      ) : null}
+
+      {isAdmin ? (
+        <section className="home-card whatsapp-notify-section">
+          <div className="card-header-inline">
+            <h3>📲 WhatsApp Notifications</h3>
+            <span className="dashboard-chip">{stats.activeMonth || '-'}</span>
+          </div>
+          <p className="dashboard-bottom-note" style={{ marginBottom: '16px' }}>
+            Send pre-composed messages to the society WhatsApp group. Click a button, WhatsApp will open with the message ready — select your group and send.
+          </p>
+          <div className="whatsapp-notify-grid">
+            <div className="whatsapp-notify-card">
+              <div className="whatsapp-notify-icon">💰</div>
+              <div className="whatsapp-notify-body">
+                <strong>Maintenance Reminder</strong>
+                <p>Per-head amount for {stats.activeMonth || 'current month'}: <b>{formatCurrency(stats.currentMonthMaintenancePerHead)}</b></p>
+              </div>
+              <button
+                type="button"
+                className="whatsapp-btn"
+                onClick={sendMaintenanceReminder}
+              >
+                Send via WhatsApp
+              </button>
+            </div>
+
+            <div className="whatsapp-notify-card">
+              <div className="whatsapp-notify-icon">⚠️</div>
+              <div className="whatsapp-notify-body">
+                <strong>Pending Members</strong>
+                <p>
+                  {pendingMembersList.length > 0
+                    ? `${pendingMembersList.length} member(s) pending · Total: ${formatCurrency(totalPendingAmount)}`
+                    : `All members paid for ${stats.activeMonth || 'this month'}`}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="whatsapp-btn"
+                onClick={sendPendingMembersMessage}
+              >
+                Send via WhatsApp
+              </button>
+            </div>
+
+            <div className="whatsapp-notify-card">
+              <div className="whatsapp-notify-icon">📋</div>
+              <div className="whatsapp-notify-body">
+                <strong>Expense Summary</strong>
+                <p>Total expenses for {stats.activeMonth || 'current month'}: <b>{formatCurrency(currentMonthExpenseTotal)}</b></p>
+              </div>
+              <button
+                type="button"
+                className="whatsapp-btn"
+                onClick={sendExpensesSummary}
+              >
+                Send via WhatsApp
+              </button>
+            </div>
+          </div>
         </section>
       ) : null}
     </div>
