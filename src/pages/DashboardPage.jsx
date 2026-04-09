@@ -57,49 +57,71 @@ function DashboardPage() {
   const buildWhatsAppUrl = (message) =>
     `https://wa.me/?text=${encodeURIComponent(message)}`;
 
+  const MARATHI_MONTHS = {
+    Jan: 'जानेवारी', Feb: 'फेब्रुवारी', Mar: 'मार्च',
+    Apr: 'एप्रिल', May: 'मे', Jun: 'जून',
+    Jul: 'जुलै', Aug: 'ऑगस्ट', Sep: 'सप्टेंबर',
+    Oct: 'ऑक्टोबर', Nov: 'नोव्हेंबर', Dec: 'डिसेंबर'
+  };
+
   const sendMaintenanceReminder = () => {
-    const month = stats.activeMonth || '-';
-    const perHead = formatCurrency(stats.currentMonthMaintenancePerHead);
+    const marathiMonth = MARATHI_MONTHS[activeMonthLabel] || activeMonthLabel;
+    const perHead = stats.currentMonthMaintenancePerHead || 0;
+    const expenseLines = expenseRecords
+      .filter((r) => r.month === activeMonthLabel)
+      .map((r) => `• ${r.title} – ₹${Number(r.amount || 0).toLocaleString('en-IN')}`)
+      .join('\n');
     const msg =
-      `🏠 *Sakar Palace B – Maintenance Reminder*\n` +
-      `📅 Month: ${month}\n\n` +
-      `Dear Residents,\n` +
-      `Please pay your maintenance for *${month}*.\n\n` +
-      `💰 Amount per Head: *${perHead}*\n\n` +
-      `Kindly pay at the earliest.\n` +
-      `Thank you! 🙏`;
+      `सर्व सदस्यांना कळविण्यात येते की,\n\n` +
+      `*महिना: ${marathiMonth} 2026*\n\n` +
+      `या महिन्याचे एकूण खर्च खालीलप्रमाणे आहेत:\n` +
+      (expenseLines || '(कोणतेही खर्च नोंदवलेले नाहीत)') + `\n\n` +
+      `प्रति फ्लॅट/सदस्य देय रक्कम: ₹${Number(perHead).toLocaleString('en-IN')}\n\n` +
+      `सर्व सदस्यांनी विनंती आहे की वरील मेंटेनन्स रक्कम *दिनांक 30 ${marathiMonth} 2026* पूर्वी भरावी.\n\n` +
+      `वेळेत रक्कम भरून सहकार्य करावे.\n\n` +
+      `धन्यवाद,\n` +
+      `साकार पॅलेस बी - कमिटी`;
     window.open(buildWhatsAppUrl(msg), '_blank', 'noopener,noreferrer');
   };
 
   const sendPendingMembersMessage = () => {
-    const month = stats.activeMonth || '-';
+    const marathiMonth = MARATHI_MONTHS[activeMonthLabel] || activeMonthLabel;
     const lines = pendingMembersList.map(
-      (m) => `• ${m.flatNo} | ${m.resident} | ${formatCurrency(m.pendingAmount)}`
+      (m, i) => `${i + 1}. ${m.resident} (${m.flatNo}) – ₹${Number(m.pendingAmount).toLocaleString('en-IN')}`
     );
-    const msg =
-      `🏠 *Sakar Palace B – Pending Maintenance*\n` +
-      `📅 Month: ${month}\n\n` +
-      (lines.length > 0
-        ? `Following members have pending dues:\n${lines.join('\n')}\n\n` +
-          `💰 Total Pending: *${formatCurrency(totalPendingAmount)}*`
-        : `✅ All members have paid for ${month}.`) +
-      `\n\nPlease clear dues at the earliest. 🙏`;
+    const msg = lines.length > 0
+      ? `सर्व सदस्यांना कळविण्यात येते की,\n\n` +
+        `खालील सदस्यांची मेंटेनन्स रक्कम अद्याप प्रलंबित आहे:\n\n` +
+        `*महिना: ${marathiMonth} 2026*\n\n` +
+        `${lines.join('\n')}\n\n` +
+        `सर्व संबंधित सदस्यांनी विनंती आहे की आपली थकबाकी रक्कम *लवकरात लवकर भरावी*.\n\n` +
+        `आपल्या सहकार्याची अपेक्षा आहे.\n\n` +
+        `धन्यवाद,\n` +
+        `साकार पॅलेस बी - कमिटी`
+      : `सर्व सदस्यांना कळविण्यात येते की,\n\n` +
+        `*महिना: ${marathiMonth} 2026*\n\n` +
+        `✅ सर्व सदस्यांनी वेळेत मेंटेनन्स रक्कम भरली आहे.\n\n` +
+        `आपल्या वेळेत पेमेंट केल्याबद्दल धन्यवाद! 🙏\n\n` +
+        `धन्यवाद,\n` +
+        `साकार पॅलेस बी - कमिटी`;
     window.open(buildWhatsAppUrl(msg), '_blank', 'noopener,noreferrer');
   };
 
   const sendExpensesSummary = () => {
-    const month = stats.activeMonth || '-';
-    const total = formatCurrency(currentMonthExpenseTotal);
+    const marathiMonth = MARATHI_MONTHS[activeMonthLabel] || activeMonthLabel;
     const lines = expenseRecords
       .filter((r) => r.month === activeMonthLabel)
-      .map((r) => `• ${r.title} – ${formatCurrency(r.amount)}`);
+      .map((r, i) => `${i + 1}. ${r.title} – ₹${Number(r.amount || 0).toLocaleString('en-IN')}`);
+    const total = Number(currentMonthExpenseTotal).toLocaleString('en-IN');
     const msg =
-      `🏠 *Sakar Palace B – Expense Summary*\n` +
-      `📅 Month: ${month}\n\n` +
-      (lines.length > 0
-        ? `Expenses for *${month}*:\n${lines.join('\n')}\n\n`
-        : `No expenses recorded for ${month}.\n\n`) +
-      `💰 Total: *${total}*\n\nThank you! 🙏`;
+      `सर्व सदस्यांना कळविण्यात येते की,\n\n` +
+      `*महिना: ${marathiMonth} 2026 – एकूण खर्चाचा तपशील*\n\n` +
+      `खर्चाचा सारांश खालीलप्रमाणे आहे:\n\n` +
+      (lines.length > 0 ? `${lines.join('\n')}\n\n` : `(कोणतेही खर्च नोंदवलेले नाहीत)\n\n`) +
+      `*एकूण खर्च: ₹${total}*\n\n` +
+      `कृपया नोंद घ्यावी.\n\n` +
+      `धन्यवाद,\n` +
+      `साकार पॅलेस बी - कमिटी`;
     window.open(buildWhatsAppUrl(msg), '_blank', 'noopener,noreferrer');
   };
 
