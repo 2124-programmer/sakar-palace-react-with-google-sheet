@@ -32,10 +32,11 @@ function MembersPage() {
     { key: 'wing', label: 'Wing / Tower' },
     { key: 'flatNo', label: 'Flat No' },
     { key: 'residentName', label: 'Resident Name' },
-    { key: 'occupancyType', label: 'Occupancy Type' },
+    { key: 'occupancyType', label: 'Resident Type (Owner/Tenant)' },
+    { key: 'role', label: 'Role' },
     {
       key: 'contact',
-      label: 'Contact',
+      label: 'Contact Number',
       renderCell: (value) => value || '—'
     },
     {
@@ -48,8 +49,8 @@ function MembersPage() {
   return (
     <div className="page-container">
       <PageHeader
-        title="All Members"
-        subtitle="View resident details with search and owner/tenant filters."
+        title="Residents Directory"
+        subtitle="Search and view resident details with owner/tenant filters."
       />
 
       {isUsingFallback ? (
@@ -62,7 +63,7 @@ function MembersPage() {
 
       <div className="toolbar">
         <label>
-          Filter
+          Resident Type
           <select value={occupancyFilter} onChange={(event) => setOccupancyFilter(event.target.value)}>
             <option value="All">All</option>
             <option value="Owner">Owner</option>
@@ -71,10 +72,10 @@ function MembersPage() {
         </label>
 
         <label>
-          Search
+          Search Resident
           <input
             type="search"
-            placeholder="Search by flat or name"
+            placeholder="by Flat No / Name"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />

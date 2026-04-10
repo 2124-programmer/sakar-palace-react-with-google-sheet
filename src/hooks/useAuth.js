@@ -3,7 +3,7 @@ import { members as fallbackMembers } from '../data/societyData';
 import { fetchMembersFromSheets, hasSheetConfig } from '../services/sheetDataService';
 
 const AUTH_SESSION_STORAGE_KEY = 'sakar-auth-session-v1';
-const ENABLE_TEST_DASHBOARD_USER = String(import.meta.env.VITE_ENABLE_TEST_USER || '').trim().toLowerCase() !== 'false';
+const ENABLE_TEST_DASHBOARD_USER = String(import.meta.env.VITE_ENABLE_TEST_USER || '').trim().toLowerCase() === 'true';
 const TEST_DASHBOARD_USER = ENABLE_TEST_DASHBOARD_USER
   ? {
   mobile: String(import.meta.env.VITE_TEST_USER_MOBILE || '9000000000'),
@@ -80,20 +80,35 @@ const persistSession = (session) => {
 };
 
 const loadMembersForAuth = async () => {
-  if (hasSheetConfig()) {
-    try {
-      return await fetchMembersFromSheets();
-    } catch {
-      // fall through to fallback members
-    }
+  if (!hasSheetConfig()) {
+    return {
+      members: Array.isArray(fallbackMembers) ? fallbackMembers : [],
+      source: 'fallback-missing-config',
+      warning: 'Login source is fallback data because VITE_GOOGLE_SHEET_ID is missing on this deployment.'
+    };
   }
 
-  return Array.isArray(fallbackMembers) ? fallbackMembers : [];
+  try {
+    const members = await fetchMembersFromSheets();
+    return {
+      members,
+      source: 'sheets',
+      warning: ''
+    };
+  } catch {
+    return {
+      members: Array.isArray(fallbackMembers) ? fallbackMembers : [],
+      source: 'fallback-fetch-failed',
+      warning: 'Unable to read Members sheet from this deployment. Check Sheet sharing/API key restrictions on Netlify.'
+    };
+  }
 };
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authSource, setAuthSource] = useState('unknown');
+  const [authWarning, setAuthWarning] = useState('');
 
   useEffect(() => {
     const stored = readStoredSession();
@@ -133,7 +148,10 @@ export function AuthProvider({ children }) {
       return { success: false, message: 'Enter valid 6-digit code.' };
     }
 
-    const members = await loadMembersForAuth();
+    const authLoad = await loadMembersForAuth();
+    const members = authLoad.members;
+    setAuthSource(authLoad.source);
+    setAuthWarning(authLoad.warning || '');
 
     const member = members.find((item) => {
       const memberMobile = normalizeMobile(item?.contact || item?.phone || item?.mobile);
@@ -144,6 +162,14 @@ export function AuthProvider({ children }) {
     });
 
     if (!member) {
+      if (authLoad.source !== 'sheets') {
+        return {
+          success: false,
+          message:
+            authLoad.warning || 'Unable to verify credentials from Google Sheets on this deployment.'
+        };
+      }
+
       return { success: false, message: 'Invalid mobile or 6-digit code.' };
     }
 
@@ -173,6 +199,8 @@ export function AuthProvider({ children }) {
       isAdmin: session?.role === 'admin',
       isDashboardOnlyUser: session?.accessScope === 'dashboard-only',
       isTestUserEnabled: ENABLE_TEST_DASHBOARD_USER,
+      authSource,
+      authWarning,
       testCredentials: ENABLE_TEST_DASHBOARD_USER
         ? {
             mobile: TEST_DASHBOARD_USER.mobile,
@@ -183,7 +211,7 @@ export function AuthProvider({ children }) {
       login,
       logout
     }),
-    [loading, session]
+    [loading, session, authSource, authWarning]
   );
 
   return createElement(AuthContext.Provider, { value }, children);
