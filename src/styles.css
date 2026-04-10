@@ -967,6 +967,54 @@ tbody tr:hover {
   background: linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
 }
 
+.maintenance-receipt-panel {
+  margin-top: 16px;
+}
+
+.maintenance-receipt-caption {
+  margin: 0 0 12px;
+  color: #4a627a;
+}
+
+.maintenance-receipt-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.maintenance-receipt-flow label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+  font-size: 0.9rem;
+}
+
+.maintenance-receipt-flow select {
+  padding: 9px 10px;
+  border: 1px solid #c2d3e4;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.maintenance-receipt-preview {
+  width: 100%;
+  margin-top: 4px;
+  padding: 12px;
+  border: 1px solid #cddced;
+  border-radius: 10px;
+  background: #f7fbff;
+}
+
+.maintenance-receipt-preview h4 {
+  margin: 0 0 10px;
+}
+
+.maintenance-receipt-preview p {
+  margin: 0 0 6px;
+}
+
 .notice-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
