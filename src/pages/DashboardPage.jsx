@@ -11,6 +11,19 @@ const statusClassByValue = {
   resolved: 'status-resolved'
 };
 
+const getLogicalActiveMonth = () => {
+  const now = new Date();
+  const logicalMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  if (now.getDate() < 15) {
+    logicalMonthDate.setMonth(logicalMonthDate.getMonth() - 1);
+  }
+
+  const month = logicalMonthDate.toLocaleString('en-US', { month: 'short' });
+  const year = String(logicalMonthDate.getFullYear()).slice(-2);
+  return `${month}-${year}`;
+};
+
 function DashboardPage() {
   const { loading, error, isUsingFallback, data } = useDashboardData();
   const { isAdmin } = useAppRole();
@@ -41,6 +54,7 @@ function DashboardPage() {
   const advancedMembersList = maintenanceSummary.advancedMembersList || [];
   const totalPendingAmount = maintenanceSummary.totalPendingAmount || 0;
   const totalAdvancedAmount = maintenanceSummary.totalAdvancedAmount || 0;
+  const activeMonth = getLogicalActiveMonth();
 
   const getStatusClass = (status) => {
     const key = String(status || '').trim().toLowerCase();
@@ -48,7 +62,7 @@ function DashboardPage() {
   };
 
   // Compute current-month expense total from expenses hook
-  const activeMonthLabel = String(stats.activeMonth || '').split('-')[0]; // "Mar-26" → "Mar"
+  const activeMonthLabel = String(activeMonth).split('-')[0]; // "Mar-26" → "Mar"
   const expenseRecords = expenseData?.records || [];
   const currentMonthExpenseTotal = expenseRecords
     .filter((r) => r.month === activeMonthLabel)
@@ -162,7 +176,7 @@ function DashboardPage() {
 
       <section className="dashboard-card-grid dashboard-card-grid-two">
         <article className="home-card dashboard-card compact-card">
-          <h3>Monthly Summary : {stats.activeMonth || '-'}</h3>
+          <h3>Monthly Summary : {activeMonth || '-'}</h3>
           <div className="table-shell dashboard-table-shell">
             <table className="dashboard-mini-table">
               <thead>
@@ -216,7 +230,7 @@ function DashboardPage() {
           <div className="card-header-inline">
             <div>
               <h3>Pending Payments</h3>
-              <small>{stats.activeMonth ? `For Month: ${stats.activeMonth}` : 'Active month pending'}</small>
+              <small>{activeMonth ? `For Month: ${activeMonth}` : 'Active month pending'}</small>
             </div>
             <span className="dashboard-chip">{pendingMembersList.length}</span>
           </div>
@@ -333,7 +347,7 @@ function DashboardPage() {
         <section className="home-card whatsapp-notify-section">
           <div className="card-header-inline">
             <h3>📲 WhatsApp Notifications</h3>
-            <span className="dashboard-chip">{stats.activeMonth || '-'}</span>
+            <span className="dashboard-chip">{activeMonth || '-'}</span>
           </div>
           <p className="dashboard-bottom-note" style={{ marginBottom: '16px' }}>
             Send pre-composed messages to the society WhatsApp group. Click a button, WhatsApp will open with the message ready — select your group and send.
@@ -343,7 +357,7 @@ function DashboardPage() {
               <div className="whatsapp-notify-icon">💰</div>
               <div className="whatsapp-notify-body">
                 <strong>Maintenance Reminder</strong>
-                <p>Per-head amount for {stats.activeMonth || 'current month'}: <b>{formatCurrency(stats.currentMonthMaintenancePerHead)}</b></p>
+                <p>Per-head amount for {activeMonth || 'current month'}: <b>{formatCurrency(stats.currentMonthMaintenancePerHead)}</b></p>
               </div>
               <button
                 type="button"
@@ -361,7 +375,7 @@ function DashboardPage() {
                 <p>
                   {pendingMembersList.length > 0
                     ? `${pendingMembersList.length} member(s) pending · Total: ${formatCurrency(totalPendingAmount)}`
-                    : `All members paid for ${stats.activeMonth || 'this month'}`}
+                    : `All members paid for ${activeMonth || 'this month'}`}
                 </p>
               </div>
               <button
@@ -377,7 +391,7 @@ function DashboardPage() {
               <div className="whatsapp-notify-icon">📋</div>
               <div className="whatsapp-notify-body">
                 <strong>Expense Summary</strong>
-                <p>Total expenses for {stats.activeMonth || 'current month'}: <b>{formatCurrency(currentMonthExpenseTotal)}</b></p>
+                <p>Total expenses for {activeMonth || 'current month'}: <b>{formatCurrency(currentMonthExpenseTotal)}</b></p>
               </div>
               <button
                 type="button"

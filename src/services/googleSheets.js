@@ -40,6 +40,29 @@ const findValue = (row, aliases, fallback = '') => {
   return found ? row[found] : fallback;
 };
 
+const getCycleActiveMonth = (date = new Date()) => {
+  const monthDate = new Date(date.getFullYear(), date.getMonth(), 1);
+
+  // Billing cycle: 15th to next 14th. Before 15th, use previous month as active month.
+  if (date.getDate() < 15) {
+    monthDate.setMonth(monthDate.getMonth() - 1);
+  }
+
+  const month = monthDate.toLocaleString('en-US', { month: 'short' });
+  const year = String(monthDate.getFullYear()).slice(-2);
+  return `${month}-${year}`;
+};
+
+const resolveMonthKey = (row, monthLabel) => {
+  const keys = Object.keys(row || {});
+  const wanted = normalize(monthLabel).replace(/\s+/g, '');
+
+  return (
+    keys.find((key) => normalize(key).replace(/\s+/g, '') === wanted) ||
+    monthLabel
+  );
+};
+
 const mapStats = (rows) => {
   const first = rows[0] || {};
   return {
@@ -85,45 +108,80 @@ const mapComplaints = (rows) =>
     status: findValue(row, ['status', 'state'], 'Open')
   }));
 
-const mapMaintenanceSummary = (rows) => {
+const mapMaintenanceSummary = (rows, activeMonth) => {
   const records = rows.filter((row) => {
     const flatNo = findValue(row, ['flat no', 'flatno', 'flat no.']);
     const resident = findValue(row, ['resident', 'owner', 'name']);
     return flatNo && resident;
   });
 
-  // Column P (Advanced Jama) is already the cumulative net balance across ALL months.
-  // It already incorporates any shortfall from the active month, so no per-month
-  // re-adjustment is needed. A positive value = net advance; negative = net pending.
+  const decidedCollectRow = rows.find((row) => {
+    const normalizedValues = Object.values(row || {}).map((value) => normalize(value));
+    return normalizedValues.some((value) =>
+      ['descided to collect', 'decided to collect', 'decided collect'].includes(value)
+    );
+  });
+
+  const amountPerHeadRow = rows.find((row) => {
+    const normalizedValues = Object.values(row || {}).map((value) => normalize(value));
+    return normalizedValues.some((value) =>
+      ['ammount/head', 'amount/head', 'amount per head', 'maintenance/head', 'per head'].includes(value)
+    );
+  });
+
+  const monthKey = resolveMonthKey(records[0] || decidedCollectRow || amountPerHeadRow || {}, activeMonth);
+  const perHeadFromDecidedCollect = parseNumber(decidedCollectRow?.[monthKey]);
+  const perHeadFromAmountPerHead = parseNumber(amountPerHeadRow?.[monthKey]);
+  const currentMonthMaintenancePerHead =
+    perHeadFromDecidedCollect > 0 ? perHeadFromDecidedCollect : perHeadFromAmountPerHead;
+
   const memberStats = records.map((row) => {
-    const flatNo = findValue(row, ['flat no', 'flatno', 'flat no.']);
-    const resident = findValue(row, ['resident', 'owner', 'name']);
+    const paidAmount = parseNumber(row?.[monthKey]);
+    const pendingAmount = Math.max(currentMonthMaintenancePerHead - paidAmount, 0);
     const advancedJama = parseNumber(findValue(row, ['advanced jama', 'advantage jama'], '0'));
-    return { id: row.id, flatNo, resident, advancedJama };
+
+    return {
+      id: row.id,
+      flatNo: findValue(row, ['flat no', 'flatno', 'flat no.']),
+      resident: findValue(row, ['resident', 'owner', 'name']),
+      paidAmount,
+      pendingAmount,
+      advancedJama
+    };
   });
 
   const pendingMembersList = memberStats
-    .filter((item) => item.advancedJama < 0)
-    .map(({ id, flatNo, resident, advancedJama }) => ({
-      id, flatNo, resident, pendingAmount: Math.abs(advancedJama)
+    .filter((item) => item.pendingAmount > 0)
+    .map(({ id, flatNo, resident, pendingAmount }) => ({
+      id,
+      flatNo,
+      resident,
+      pendingAmount
     }));
 
   const advancedMembersList = memberStats
     .filter((item) => item.advancedJama > 0)
     .map(({ id, flatNo, resident, advancedJama }) => ({
-      id, flatNo, resident, advancedAmount: advancedJama
+      id,
+      flatNo,
+      resident,
+      advancedAmount: advancedJama
     }));
 
   const totalPendingAmount = pendingMembersList.reduce((total, item) => total + item.pendingAmount, 0);
   const totalAdvancedAmount = advancedMembersList.reduce((total, item) => total + item.advancedAmount, 0);
+  const maintenancePaidMembers = memberStats.filter((item) => item.paidAmount > 0).length;
+  const pendingMemberCount = pendingMembersList.length;
 
   return {
     pendingMembersList,
     advancedMembersList,
     totalPendingAmount,
     totalAdvancedAmount,
+    currentMonthMaintenancePerHead,
+    maintenancePaidMembers,
     totalMemberCount: records.length,
-    pendingMemberCount: pendingMembersList.length
+    pendingMemberCount
   };
 };
 
@@ -198,15 +256,21 @@ export async function fetchDashboardFromSheets(customRanges = {}) {
   const mapped = Object.fromEntries(entries);
   console.log('[googleSheets] Mapping dashboard payload to UI model');
 
-  const maintenanceSummary = mapMaintenanceSummary(mapped.maintenance || []);
+  const activeMonth = getCycleActiveMonth();
+  const maintenanceSummary = mapMaintenanceSummary(mapped.maintenance || [], activeMonth);
   const baseStats = mapStats(mapped.stats || []);
 
   // Override pending/paid counts from the computed maintenance data so the
   // Current Month Details card always matches the Pending List card.
   const stats = {
     ...baseStats,
+    activeMonth,
+    currentMonthMaintenancePerHead:
+      maintenanceSummary.currentMonthMaintenancePerHead || baseStats.currentMonthMaintenancePerHead,
     pendingMembers: maintenanceSummary.pendingMemberCount,
-    maintenancePaidMembers: maintenanceSummary.totalMemberCount - maintenanceSummary.pendingMemberCount
+    maintenancePaidMembers:
+      maintenanceSummary.maintenancePaidMembers ||
+      maintenanceSummary.totalMemberCount - maintenanceSummary.pendingMemberCount
   };
 
   const result = {
