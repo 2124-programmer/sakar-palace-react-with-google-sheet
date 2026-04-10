@@ -48,8 +48,8 @@ const sanitizeFlatNo = (flatNo) => String(flatNo || '').replace(/\s+/g, '').repl
 
 const buildReceiptNo = (monthKey, flatNo) => {
   const parsed = parseReceiptMonth(monthKey);
-  if (!parsed) return `SPB-${new Date().getFullYear()}-${sanitizeFlatNo(flatNo)}`;
-  return `SPB-${parsed.compactMonth}-${sanitizeFlatNo(flatNo)}`;
+  if (!parsed) return `SP-${sanitizeFlatNo(flatNo)}-${new Date().getFullYear()}`;
+  return `SP-${sanitizeFlatNo(flatNo)}-${parsed.compactMonth}`;
 };
 
 const formatToday = () =>
@@ -100,42 +100,51 @@ export const downloadMaintenanceReceipt = ({
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(33, 44, 60);
 
-  let y = 72;
-  doc.setFontSize(17);
-  centerText(doc, SOCIETY_NAME, y);
-  y += 20;
-
-  doc.setFontSize(11);
-  centerText(doc, PROJECT_NAME, y);
-  y += 18;
-
-  const addressLines = doc.splitTextToSize(`Address: ${SOCIETY_ADDRESS}`, pageWidth - margin * 2);
-  doc.text(addressLines, pageWidth / 2, y, { align: 'center' });
-  y += addressLines.length * 13 + 10;
-
-  line(doc, y, margin);
-  y += 24;
-
+  let y = 70;
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(20);
+  doc.setFontSize(22);
   centerText(doc, 'MAINTENANCE RECEIPT', y);
-  y += 18;
+  y += 24;
   doc.setFont('helvetica', 'normal');
 
   line(doc, y, margin);
-  y += 24;
+  y += 22;
 
   doc.setFontSize(12);
   doc.text(`Receipt No: ${buildReceiptNo(monthKey, flatNo)}`, margin, y);
   doc.text(`Date: ${formatToday()}`, pageWidth - margin, y, { align: 'right' });
 
-  y += 20;
+  y += 18;
+  line(doc, y, margin);
+
+  y += 18;
+
+  const societyBlockTop = y;
+  const societyBlockPadding = 14;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(17);
+  centerText(doc, SOCIETY_NAME, y + societyBlockPadding + 4);
+
+  doc.setFontSize(11.5);
+  centerText(doc, PROJECT_NAME, y + societyBlockPadding + 24);
+
+  doc.setFontSize(10.5);
+  const addressLines = doc.splitTextToSize(`Address: ${SOCIETY_ADDRESS}`, pageWidth - margin * 2 - 24);
+  doc.text(addressLines, pageWidth / 2, y + societyBlockPadding + 44, { align: 'center' });
+
+  const societyBlockHeight = societyBlockPadding + 44 + addressLines.length * 13 + 12;
+  doc.rect(margin, societyBlockTop, pageWidth - margin * 2, societyBlockHeight);
+
+  y = societyBlockTop + societyBlockHeight + 18;
   line(doc, y, margin);
 
   y += 26;
   doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
   doc.text('Resident Details', margin, y);
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(12);
 
   y += 22;
   doc.text(`Name: ${residentName || '-'}`, margin, y);
@@ -157,8 +166,10 @@ export const downloadMaintenanceReceipt = ({
 
   y += 26;
   doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
   doc.text('Maintenance Details', margin, y);
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(12);
 
   y += 22;
   doc.text(`Month: ${parsedMonth.monthLabel}`, margin, y);
@@ -173,7 +184,7 @@ export const downloadMaintenanceReceipt = ({
 
   y += 26;
   doc.setFont('helvetica', 'bold');
-  doc.text(`Payment Mode: ${paymentMode}`, margin, y);
+  doc.text(`Payment Mode: ${paymentMode}`, pageWidth - margin, y, { align: 'right' });
 
   y += 22;
   line(doc, y, margin);

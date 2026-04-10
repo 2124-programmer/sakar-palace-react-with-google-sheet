@@ -145,7 +145,7 @@ function MaintenancePage() {
 
     const monthAmount = Number(selectedRow.months?.[receiptMonth] || 0);
     if (monthAmount <= 0) {
-      setReceiptError('Receipt is available only for paid maintenance entries.');
+      setReceiptError('Receipt is available only for paid months.');
       setReceiptPreview(null);
       return;
     }
