@@ -305,10 +305,10 @@ function ExpensesPage() {
   const columns = [
     { key: 'srNo', label: 'Sr No' },
     { key: 'month', label: 'Month' },
-    { key: 'title', label: 'Expense Name' },
+    { key: 'title', label: 'Expense Description' },
     { key: 'category', label: 'Category' },
     { key: 'amount', label: 'Amount', renderCell: (value) => formatCurrency(value) },
-    { key: 'payTo', label: 'Pay To' },
+    { key: 'payTo', label: 'Paid To' },
     {
       key: 'status',
       label: 'Status',
@@ -327,7 +327,7 @@ function ExpensesPage() {
         )
       )
     },
-    { key: 'paidDate', label: 'Paid Date', renderCell: (value) => value || '-' }
+    { key: 'paidDate', label: 'Payment Date', renderCell: (value) => value || '-' }
   ];
 
   if (isAdmin) {
@@ -350,8 +350,8 @@ function ExpensesPage() {
   return (
     <div className="page-container">
       <PageHeader
-        title="Expenses / Spend List"
-        subtitle="Track every society expense with category and vendor transparency."
+        title="Expense Management"
+        subtitle="Track and manage all society expenses with category and vendor details."
       />
 
       {isUsingFallback ? (
@@ -364,15 +364,15 @@ function ExpensesPage() {
 
       <section className="stats-grid maintenance-stats-grid">
         <article className="stat-card maintenance-highlight">
-          <p className="stat-card-label">Filtered Entries</p>
+          <p className="stat-card-label">Total Entries</p>
           <p className="stat-card-value">{filteredRows.length}</p>
         </article>
         <article className="stat-card">
-          <p className="stat-card-label">Filtered Total</p>
+          <p className="stat-card-label">Total Expense</p>
           <p className="stat-card-value">{formatCurrency(filteredTotal)}</p>
         </article>
         <article className="stat-card">
-          <p className="stat-card-label">Paid / Pending</p>
+          <p className="stat-card-label">Payment Status (Paid / Pending)</p>
           <p className="stat-card-value">{`${paidCount} / ${pendingCount}`}</p>
         </article>
       </section>
@@ -404,13 +404,13 @@ function ExpensesPage() {
 
         {isAdmin ? (
           <button className="btn btn-secondary" type="button" onClick={handleResetFromSheet}>
-            Reset To Sheet Data
+            Reset Data
           </button>
         ) : null}
 
         {isAdmin ? (
           <button className="btn btn-primary" type="button" onClick={openAddModal}>
-            Add Expense
+            Add New Expense
           </button>
         ) : null}
       </div>
@@ -433,7 +433,7 @@ function ExpensesPage() {
               </thead>
               <tbody>
                 <tr>
-                  <td>Total Kharch</td>
+                  <td>Total Expenses</td>
                   {monthOptions.map((month) => (
                     <td key={`kharch-${month}`}>{formatCurrency(monthlyTotals[month] || 0)}</td>
                   ))}

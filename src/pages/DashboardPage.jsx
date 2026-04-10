@@ -146,39 +146,39 @@ function DashboardPage() {
           <strong>{stats.totalFlats}</strong>
         </article>
         <article className="mini-stat occupied">
-          <p>Maintenance Advanced</p>
+          <p>Advance Balance</p>
           <strong>{formatCurrency(stats.totalMaintenanceAdvanced)}</strong>
         </article>
         <article className="mini-stat dues">
-          <p>Complaints Summary</p>
+          <p>Complaints Overview</p>
           <strong>{`${stats.activeComplaints} / ${stats.inProgressComplaints} / ${stats.resolvedComplaints}`}</strong>
           <p className="dashboard-bottom-note">Active / In Progress / Resolved</p>
         </article>
         <article className="mini-stat vacant">
-          <p>Light Bill</p>
+          <p>Electricity Charges (Current Month)</p>
           <strong>{stats.lightBillForActiveMonth || '-'}</strong>
         </article>
       </section>
 
       <section className="dashboard-card-grid dashboard-card-grid-two">
         <article className="home-card dashboard-card compact-card">
-          <h3>Current Month Details : {stats.activeMonth || '-'}</h3>
+          <h3>Monthly Summary : {stats.activeMonth || '-'}</h3>
           <div className="table-shell dashboard-table-shell">
             <table className="dashboard-mini-table">
               <thead>
                 <tr>
                   <th>Metric</th>
-                  <th>Value</th>
+                  <th>Details</th>
                 </tr>
               </thead>
               <tbody>
                 
                 <tr>
-                  <td>Maintenance/Head</td>
+                  <td>Maintenance per Flat</td>
                   <td>{formatCurrency(stats.currentMonthMaintenancePerHead)}</td>
                 </tr>
                 <tr>
-                  <td>Maintainance paid by</td>
+                  <td>Paid Members</td>
                   <td>{stats.maintenancePaidMembers} Members</td>
                 </tr>
                 <tr>
@@ -190,14 +190,14 @@ function DashboardPage() {
           </div>
         </article>
         <article className="home-card dashboard-card compact-card">
-          <h3>IMP Contacts</h3>
+          <h3>Important Details</h3>
           <div className="table-shell dashboard-table-shell">
             <table className="dashboard-mini-table">
               <thead>
                 <tr>
                   <th>Role</th>
                   <th>Name</th>
-                  <th>Contact</th>
+                  <th>Number</th>
                 </tr>
               </thead>
               <tbody>
@@ -215,8 +215,8 @@ function DashboardPage() {
         <article className="home-card dashboard-card compact-card">
           <div className="card-header-inline">
             <div>
-              <h3>Maintainance Pending List</h3>
-              <small>{stats.activeMonth ? `Month: ${stats.activeMonth}` : 'Active month pending'}</small>
+              <h3>Pending Payments</h3>
+              <small>{stats.activeMonth ? `For Month: ${stats.activeMonth}` : 'Active month pending'}</small>
             </div>
             <span className="dashboard-chip">{pendingMembersList.length}</span>
           </div>
@@ -247,13 +247,13 @@ function DashboardPage() {
               </p>
             </>
           ) : (
-            <p className="dashboard-bottom-note">No pending members for the active month.</p>
+            <p className="dashboard-bottom-note">No pending payments for this month..</p>
           )}
         </article>
 
         <article className="home-card dashboard-card compact-card">
           <div className="card-header-inline">
-            <h3>Advanced Maintenance List</h3>
+            <h3>Advance Payment Details</h3>
             <span className="dashboard-chip">{advancedMembersList.length}</span>
           </div>
           {advancedMembersList.length > 0 ? (
@@ -263,8 +263,8 @@ function DashboardPage() {
                   <thead>
                     <tr>
                       <th>Flat No</th>
-                      <th>Resident</th>
-                      <th>Advanced Amount</th>
+                      <th>Resident Name</th>
+                      <th>Advance Amount (₹)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -279,7 +279,7 @@ function DashboardPage() {
                 </table>
               </div>
               <p className="dashboard-bottom-note">
-                Total advanced amount: {formatCurrency(totalAdvancedAmount)}
+                Total Advance Balance: {formatCurrency(totalAdvancedAmount)}
               </p>
             </>
           ) : (

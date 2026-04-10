@@ -120,7 +120,7 @@ function MaintenancePage() {
 
   const columns = [
     { key: 'flatNo', label: 'Flat No' },
-    { key: 'resident', label: 'Resident' },
+    { key: 'resident', label: 'Resident Name' },
     {
       key: 'selectedMonthAmount',
       label: selectedMonth === 'all' ? 'Total Paid' : selectedMonth,
@@ -129,7 +129,7 @@ function MaintenancePage() {
     },
     {
       key: 'advancedJama',
-      label: 'Advanced Jama',
+      label: 'Advanced Balance',
       renderCell: (value) => formatCurrency(value)
     },
     {
@@ -142,7 +142,7 @@ function MaintenancePage() {
   return (
     <div className="page-container">
       <PageHeader
-        title="Maintenance Status"
+        title="Maintenance Overview"
         subtitle="Month-wise society maintenance tracking with resident records and collection summaries."
       />
 
@@ -158,7 +158,7 @@ function MaintenancePage() {
           onClick={() => setView('individual')}
           className={view === 'individual' ? 'active' : ''}
         >
-          Individual View
+          Flat-wise View
         </button>
         {isAdmin ? (
           <button
@@ -166,7 +166,7 @@ function MaintenancePage() {
             onClick={() => setView('admin')}
             className={view === 'admin' ? 'active' : ''}
           >
-            Admin View
+            Society View
           </button>
         ) : null}
       </div>
@@ -197,19 +197,19 @@ function MaintenancePage() {
 
       <section className="stats-grid maintenance-stats-grid">
         <article className="stat-card maintenance-highlight">
-          <p className="stat-card-label">Visible Flats</p>
+          <p className="stat-card-label">Selected Flats</p>
           <p className="stat-card-value">{rows.length}</p>
         </article>
         <article className="stat-card">
-          <p className="stat-card-label">Collected {selectedMonth === 'all' ? '(All Months)' : `(${selectedMonth})`}</p>
+          <p className="stat-card-label">Total Collected {selectedMonth === 'all' ? '(All Months)' : `(${selectedMonth})`}</p>
           <p className="stat-card-value">{formatCurrency(selectedMonth === 'all' ? visibleTotalPaid : getSummaryValue(summaries.totalReceived, monthlyRecap.totalReceivedByMonth))}</p>
         </article>
         <article className="stat-card">
-          <p className="stat-card-label">Required</p>
+          <p className="stat-card-label">Total Payable</p>
           <p className="stat-card-value">{formatCurrency(getSummaryValue(summaries.required, monthlyRecap.requiredByMonth))}</p>
         </article>
         <article className="stat-card">
-          <p className="stat-card-label">Pending / Advanced</p>
+          <p className="stat-card-label">Net Balance (Pending/Advance)</p>
           <p className="stat-card-value">{formatCurrency(selectedMonth === 'all' ? visibleAdvancedJama : getSummaryValue(summaries.pendings, monthlyRecap.pendingByMonth))}</p>
         </article>
       </section>
@@ -225,7 +225,7 @@ function MaintenancePage() {
             <table>
               <thead>
                 <tr>
-                  <th>Metric</th>
+                  <th>Category</th>
                   {months.map((month) => (
                     <th key={month}>{month}</th>
                   ))}
@@ -233,7 +233,7 @@ function MaintenancePage() {
               </thead>
               <tbody>
                 <tr>
-                  <td>Total Received</td>
+                  <td>Total Collected</td>
                   {months.map((month) => (
                     <td key={`received-${month}`}>
                       {formatCurrency(
@@ -245,19 +245,19 @@ function MaintenancePage() {
                   ))}
                 </tr>
                 <tr>
-                  <td>Required</td>
+                  <td>Total Payable</td>
                   {months.map((month) => (
                     <td key={`required-${month}`}>{formatCurrency(monthlyRecap.requiredByMonth?.[month] || 0)}</td>
                   ))}
                 </tr>
                 <tr>
-                  <td>Pending</td>
+                  <td>Pending Amount</td>
                   {months.map((month) => (
                     <td key={`pending-${month}`}>{formatCurrency(monthlyRecap.pendingByMonth?.[month] || 0)}</td>
                   ))}
                 </tr>
                 <tr>
-                  <td>Advanced Jama</td>
+                  <td>Advance Balance</td>
                   {months.map((month) => (
                     <td key={`advanced-${month}`}>{formatCurrency(monthlyRecap.advancedByMonth?.[month] || 0)}</td>
                   ))}
@@ -271,19 +271,19 @@ function MaintenancePage() {
           <h3>Selected View</h3>
           <ul className="simple-list">
             <li>
-              <p className="list-title">Current Scope</p>
+              <p className="list-title">Selected Flat</p>
               <p>{isAdminView ? 'Admin view for all flats' : `Individual view for ${currentUserFlat}`}</p>
             </li>
             <li>
-              <p className="list-title">Month Focus</p>
+              <p className="list-title">Selected Period</p>
               <p>{selectedMonth === 'all' ? 'All months combined' : selectedMonth}</p>
             </li>
             <li>
-              <p className="list-title">Visible Advanced Jama</p>
+              <p className="list-title">Advance (Selected)</p>
               <p>{formatCurrency(visibleAdvancedJama)}</p>
             </li>
             <li>
-              <p className="list-title">Overall Advanced Jama</p>
+              <p className="list-title">Total Advance Balance</p>
               <p>{formatCurrency(totals.advancedJamaMembers || 0)}</p>
             </li>
           </ul>
